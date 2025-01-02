@@ -2,45 +2,6 @@
 // 현재 실행 중인 작업 상태 관리
 let runningTasks = new Set();
 
-// 실행 파일 실행 함수
-async function runExecutable(exeName, args) {
-  try {
-    return await window.electronAPI.invoke("run-executable", { exeName, args });
-  } catch (error) {
-    addLog("[오류] " + error.message);
-    throw error;
-  }
-}
-
-// 기본 설정 로드
-async function loadSettings() {
-  const settings = await window.electronAPI.store.get("settings", {
-    pc: { resolution: 2, margin: 8 },
-    tm: { timeLimit: 75, shuffleChoices: true },
-  });
-
-  document.getElementById("resolution").value = settings.pc.resolution;
-  document.getElementById("margin").value = settings.pc.margin;
-  document.getElementById("timeLimit").value = settings.tm.timeLimit;
-  document.getElementById("shuffleChoices").checked =
-    settings.tm.shuffleChoices;
-}
-
-// 설정 저장
-async function saveSettings() {
-  const settings = {
-    pc: {
-      resolution: parseInt(document.getElementById("resolution").value),
-      margin: parseInt(document.getElementById("margin").value),
-    },
-    tm: {
-      timeLimit: parseInt(document.getElementById("timeLimit").value),
-      shuffleChoices: document.getElementById("shuffleChoices").checked,
-    },
-  };
-  await window.electronAPI.store.set("settings", settings);
-}
-
 // 파일 목록 업데이트
 async function updateList(type) {
   const pathInput = document.getElementById(`${type}Path`);
@@ -48,26 +9,28 @@ async function updateList(type) {
   const dirPath = pathInput.value;
 
   try {
+    // 디렉토리 존재 확인 및 생성
     const exists = await window.electronAPI.fs.exists(dirPath);
     if (!exists) {
       await window.electronAPI.fs.mkdir(dirPath);
     }
 
+    // 파일 목록 가져오기
     const files = await window.electronAPI.fs.readdir(dirPath);
     const filteredFiles = files.filter((file) => {
       if (type === "pdf") return file.endsWith(".pdf");
       if (type === "img") return !file.includes(".");
-      if (type === "zip") return file.endsWith(".zip");
       return false;
     });
 
+    // 목록 업데이트
     listElement.innerHTML = "";
     filteredFiles.forEach((file) => {
       const option = document.createElement("option");
       option.text = file;
       option.value = file;
       if (runningTasks.has(file)) {
-        option.style.backgroundColor = "yellow";
+        option.style.backgroundColor = "#fff3cd";
       }
       listElement.add(option);
     });
@@ -82,20 +45,9 @@ async function updateList(type) {
 async function openFolder(type) {
   const dirPath = document.getElementById(`${type}Path`).value;
   try {
-    const resolvedPath = await window.electronAPI.path.resolve(dirPath);
-    await window.electronAPI.shell.openPath(resolvedPath);
+    await window.electronAPI.shell.openPath(dirPath);
   } catch (error) {
     addLog(`[오류] 폴더 열기 실패: ${error.message}`);
-  }
-}
-
-// 전체 선택/해제
-function toggleSelectAll(type) {
-  const list = document.getElementById(`${type}List`);
-  const allSelected = list.length === list.selectedOptions.length;
-
-  for (let i = 0; i < list.length; i++) {
-    list.options[i].selected = !allSelected;
   }
 }
 
@@ -112,7 +64,7 @@ async function deleteSelected(type) {
     buttons: ["예", "아니오"],
     defaultId: 1,
     title: "확인",
-    message: "선택된 항목을 휴지통으로 이동하시겠습니까?",
+    message: "선택된 항목을 삭제하시겠습니까?",
   });
 
   if (result.response === 1) return;
@@ -124,16 +76,12 @@ async function deleteSelected(type) {
         option.value
       );
       await window.electronAPI.shell.trashItem(filePath);
+      addLog(`${option.value} 삭제됨`);
     } catch (error) {
       addLog(`[오류] 삭제 실패 (${option.value}): ${error.message}`);
     }
   }
 
-  addLog(
-    `${selectedOptions
-      .map((o) => o.value)
-      .join(", ")}가 휴지통으로 이동되었습니다.`
-  );
   await updateList(type);
 }
 
@@ -155,39 +103,37 @@ async function processPDF() {
   const pdfDir = document.getElementById("pdfPath").value;
   const imgDir = document.getElementById("imgPath").value;
 
-  addLog("[ProblemCutter] 작업을 시작합니다. with " + selectedFiles.join(", "));
+  addLog("[PDF 처리] 시작: " + selectedFiles.join(", "));
 
   for (const file of selectedFiles) {
-    const name = await window.electronAPI.path.basename(file, ".pdf");
-    const pdfPath = await window.electronAPI.path.join(pdfDir, file);
-    const outputDir = await window.electronAPI.path.join(imgDir, name);
-
     try {
+      const name = await window.electronAPI.path.basename(file, ".pdf");
+      const pdfPath = await window.electronAPI.path.join(pdfDir, file);
+      const outputDir = await window.electronAPI.path.join(imgDir, name);
+
       await window.electronAPI.fs.mkdir(outputDir);
       runningTasks.add(file);
       await updateList("pdf");
 
-      await runExecutable("problem_cutter", [
-        pdfPath,
-        outputDir,
-        name,
-        JSON.stringify(config),
-      ]);
+      await window.electronAPI.invoke("run-executable", {
+        exeName: "problem_cutter",
+        args: [pdfPath, outputDir, name, JSON.stringify(config)],
+      });
 
       runningTasks.delete(file);
       await updateList("pdf");
       await updateList("img");
+      addLog(`[완료] ${file}`);
     } catch (error) {
-      addLog("[오류] " + error.message);
+      addLog(`[오류] ${file}: ${error.message}`);
       runningTasks.delete(file);
       await updateList("pdf");
     }
   }
 
-  addLog("[ProblemCutter] 작업을 완료했습니다.");
   await window.electronAPI.dialog.showMessageBox({
     type: "info",
-    message: "작업을 완료했습니다.",
+    message: "모든 PDF 처리가 완료되었습니다.",
   });
 }
 
@@ -197,7 +143,7 @@ async function processImages() {
   const selectedFiles = [...list.selectedOptions].map((o) => o.value);
 
   if (selectedFiles.length === 0) {
-    addLog("[오류] 선택된 폴더가 없습니다.");
+    addLog("[오류] 선택된 이미지 폴더가 없습니다.");
     return;
   }
 
@@ -207,43 +153,38 @@ async function processImages() {
   };
 
   const imgDir = document.getElementById("imgPath").value;
-  const zipDir = document.getElementById("zipPath").value;
+  const zipDir = await window.electronAPI.path.join(imgDir, "../zips"); // zips 디렉토리 경로 수정
 
-  try {
-    await window.electronAPI.fs.mkdir(zipDir);
-  } catch (error) {
-    addLog("[오류] ZIP 디렉토리 생성 실패: " + error.message);
-    return;
-  }
+  // zips 디렉토리 생성 추가
+  await window.electronAPI.fs.mkdir(zipDir);
 
-  addLog("[TestMaker] 작업을 시작합니다. with " + selectedFiles.join(", "));
+  addLog("[이미지 처리] 시작: " + selectedFiles.join(", "));
 
   for (const folder of selectedFiles) {
     try {
       runningTasks.add(folder);
       await updateList("img");
 
-      await runExecutable("test_maker", [
+      await window.electronAPI.invoke("process-testmaker", {
         imgDir,
         zipDir,
         folder,
-        JSON.stringify(config),
-      ]);
+        config,
+      });
 
       runningTasks.delete(folder);
       await updateList("img");
-      await updateList("zip");
+      addLog(`[완료] ${folder}`);
     } catch (error) {
-      addLog("[오류] " + error.message);
+      addLog(`[오류] ${folder}: ${error.message}`);
       runningTasks.delete(folder);
       await updateList("img");
     }
   }
 
-  addLog("[TestMaker] 작업을 완료했습니다.");
   await window.electronAPI.dialog.showMessageBox({
     type: "info",
-    message: "작업을 완료했습니다.",
+    message: "모든 이미지 처리가 완료되었습니다.",
   });
 }
 
@@ -259,20 +200,11 @@ function clearLog() {
   document.getElementById("logArea").value = "";
 }
 
-// 이벤트 리스너 등록
+// 초기화
 document.addEventListener("DOMContentLoaded", async () => {
-  // 설정 로드
-  await loadSettings();
-
-  // 설정 변경 감지
-  document.querySelectorAll(".settings-section input").forEach((input) => {
-    input.addEventListener("change", saveSettings);
-  });
-
   // 초기 파일 목록 로드
-  for (const type of ["pdf", "img", "zip"]) {
-    await updateList(type);
-  }
+  await updateList("pdf");
+  await updateList("img");
 
   // 전역 에러 핸들러
   window.addEventListener("error", (event) => {

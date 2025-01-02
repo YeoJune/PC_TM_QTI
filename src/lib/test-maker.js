@@ -1,6 +1,6 @@
 // src/lib/test-maker.js
+const fs = require("fs");
 const path = require("path");
-const fs = require("fs").promises;
 const { v4: uuidv4 } = require("uuid");
 const archiver = require("archiver");
 const { XMLBuilder } = require("./xml-builder");
@@ -14,10 +14,10 @@ class TestMaker {
       questionSuffix: process.env.QUESTION_SUFFIX || "9",
       choicePattern: JSON.parse(process.env.CHOICE_PATTERN || "[0,1,2,3]"),
       tempDir: process.env.TEMP_DIR || "./temp",
-      timeLimit: 75,
-      pointsPerQuestion: 1.0,
-      shuffleChoices: true,
-      defaultCorrectAnswer: 0,
+      timeLimit: CONSTANTS.DEFAULT_SETTINGS.time_limit,
+      pointsPerQuestion: CONSTANTS.DEFAULT_SETTINGS.points_possible,
+      shuffleChoices: CONSTANTS.DEFAULT_SETTINGS.shuffle_answers,
+      correctAnswerIndex: CONSTANTS.DEFAULT_SETTINGS.correct_answer_index,
       ...config,
     };
     this.xmlBuilder = new XMLBuilder(this.config);
@@ -27,22 +27,15 @@ class TestMaker {
   async createPackage(inputDir, outputDir, name) {
     const tempDir = path.join(this.config.tempDir, name);
     try {
-      // 1. 이미지 수집 및 복사
       const images = await this._collectAndCopyImages(inputDir, name, tempDir);
+
       if (!images.length) {
         throw new Error("No valid questions found");
       }
 
-      // 2. XML 생성
       const assessmentId = this._generateId();
-      const xmlContent = await this._generateXMLFiles(
-        name,
-        assessmentId,
-        images,
-        tempDir
-      );
+      await this._generateXMLFiles(name, assessmentId, images, tempDir);
 
-      // 3. ZIP 패키지 생성
       const zipPath = path.join(outputDir, `${name}(${images.length}).zip`);
       await this._createZipPackage(tempDir, zipPath);
 
@@ -56,7 +49,7 @@ class TestMaker {
 
   async _collectAndCopyImages(inputDir, name, tempDir) {
     const images = await this.fileUtils.collectImages(inputDir, name);
-    await this.fileUtils.copyImagesToTemp(images, inputDir, tempDir, name);
+    await this.fileUtils.copyImagesToTemp(images, inputDir, tempDir);
     return images;
   }
 

@@ -4,6 +4,7 @@ const path = require("path");
 const fs = require("fs").promises;
 const Store = require("electron-store");
 const { spawn } = require("child_process");
+const { TestMaker } = require("./lib/test-maker");
 
 // 설정 저장소 초기화
 const store = new Store();
@@ -41,7 +42,7 @@ async function createWindow() {
 
   // 개발 도구 (개발 모드에서만 활성화)
   if (process.env.ELECTRON_IS_DEV === "1") {
-    mainWindow.webContents.openDevTools();
+    //mainWindow.webContents.openDevTools();
   }
 }
 
@@ -65,8 +66,8 @@ app.on("activate", () => {
 ipcMain.handle("run-executable", async (event, { exeName, args }) => {
   const exePath =
     process.env.ELECTRON_IS_DEV === "1"
-      ? path.join(__dirname, "..", "python_dist", exeName)
-      : path.join(process.resourcesPath, "bin", exeName);
+      ? path.join(__dirname, "python_dist", exeName, `${exeName}.exe`)
+      : path.join(process.resourcesPath, "bin", exeName, `${exeName}.exe`);
 
   return new Promise((resolve, reject) => {
     const childProcess = spawn(exePath, args);
@@ -91,6 +92,23 @@ ipcMain.handle("run-executable", async (event, { exeName, args }) => {
   });
 });
 
+ipcMain.handle(
+  "process-testmaker",
+  async (event, { imgDir, zipDir, folder, config }) => {
+    try {
+      const testMaker = new TestMaker(config);
+      await testMaker.createPackage(
+        path.join(imgDir, folder), // input directory
+        zipDir, // output directory
+        folder // name
+      );
+      return true;
+    } catch (error) {
+      throw new Error(`TestMaker 처리 실패: ${error.message}`);
+    }
+  }
+);
+
 // Store IPC 핸들러
 ipcMain.handle("store:get", (event, key, defaultValue) => {
   return store.get(key, defaultValue);
@@ -109,8 +127,8 @@ ipcMain.handle("path:resolve", (event, ...args) => {
   return path.resolve(...args);
 });
 
-ipcMain.handle("path:basename", (event, path, ext) => {
-  return path.basename(path, ext);
+ipcMain.handle("path:basename", (event, filepath, ext) => {
+  return path.basename(filepath, ext);
 });
 
 // Shell IPC 핸들러

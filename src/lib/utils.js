@@ -1,8 +1,7 @@
 // src/lib/utils.js
 const fs = require("fs").promises;
 const path = require("path");
-const { promisify } = require("util");
-const rimraf = promisify(require("rimraf"));
+const { rimraf } = require("rimraf"); // rimraf 가져오는 방식 변경
 
 class FileUtils {
   constructor(config) {
@@ -17,7 +16,7 @@ class FileUtils {
       const questionImage = `${name}${String(number).padStart(2, "0")}${
         this.config.questionSuffix
       }.png`;
-      const questionPath = path.join(inputDir, name, questionImage);
+      const questionPath = path.join(inputDir, questionImage);
 
       if (!(await this.fileExists(questionPath))) {
         break;
@@ -29,7 +28,7 @@ class FileUtils {
           2,
           "0"
         )}${choiceNum}.png`;
-        const choicePath = path.join(inputDir, name, choiceImage);
+        const choicePath = path.join(inputDir, choiceImage);
 
         if (await this.fileExists(choicePath)) {
           choices.push(choiceImage);
@@ -57,14 +56,14 @@ class FileUtils {
     for (const image of images) {
       // 문제 이미지 복사
       await this.copyFile(
-        path.join(inputDir, name, image.question),
+        path.join(inputDir, image.question), // name 제거
         path.join(mediaDir, image.question)
       );
 
       // 선지 이미지 복사
       for (const choice of image.choices) {
         await this.copyFile(
-          path.join(inputDir, name, choice),
+          path.join(inputDir, choice), // name 제거
           path.join(mediaDir, choice)
         );
       }
@@ -78,7 +77,7 @@ class FileUtils {
 
   async cleanupTempDir(tempDir) {
     if (await this.fileExists(tempDir)) {
-      await rimraf(tempDir);
+      await rimraf(tempDir); // Promise를 직접 사용
     }
   }
 

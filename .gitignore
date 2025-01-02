@@ -9,3 +9,4 @@ tests
 src/python_dist
 venv
 dist
+zips

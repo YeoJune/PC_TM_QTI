@@ -1,98 +1,80 @@
 /* src/styles.css */
+
 body {
+  font-family: Arial, sans-serif;
   margin: 0;
   padding: 20px;
-  background-color: #d0e7e8;
-  font-family: "맑은 고딕", sans-serif;
+  background-color: #f0f0f0;
 }
 
 .container {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-.file-section {
-  background-color: white;
-  padding: 15px;
-  border-radius: 5px;
+section {
+  background: white;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.path-control {
-  margin-bottom: 10px;
+h2 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
 }
 
-.path-input {
-  width: 100%;
+label {
+  display: inline-block;
+  width: 100px;
+  margin-right: 10px;
+}
+
+input[type="text"] {
+  width: 200px;
   padding: 5px;
-  margin-bottom: 5px;
+  margin-right: 10px;
 }
 
-.file-list {
+input[type="number"] {
+  width: 60px;
+  padding: 5px;
+}
+
+select[multiple] {
   width: 100%;
-  height: 200px;
-  margin-bottom: 10px;
-}
-
-.button-group {
-  display: flex;
-  gap: 10px;
-}
-
-.settings-section {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 10px;
-}
-
-.setting-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.process-btn {
-  padding: 10px 20px;
-  background-color: #bfcedf;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.delete-btn {
-  background-color: #934745;
-  color: white;
-}
-
-.log-section {
-  grid-column: 1 / -1;
-}
-
-#logArea {
-  width: 100%;
-  height: 200px;
-  margin-bottom: 10px;
-  padding: 10px;
-  resize: none;
-  font-family: "맑은 고딕", monospace;
-  font-size: 12px;
+  height: 150px;
+  margin: 10px 0;
+  border: 1px solid #ddd;
 }
 
 button {
   padding: 5px 10px;
-  background-color: #bfcedf;
+  margin-right: 5px;
+  background-color: #4caf50;
+  color: white;
   border: none;
   border-radius: 3px;
   cursor: pointer;
 }
 
 button:hover {
-  opacity: 0.9;
+  background-color: #45a049;
 }
 
-h3 {
-  margin-top: 0;
-  color: #333;
+button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+#logArea {
+  width: 100%;
+  height: 150px;
+  margin-bottom: 10px;
+  padding: 10px;
+  resize: vertical;
+  border: 1px solid #ddd;
+  font-family: monospace;
 }
