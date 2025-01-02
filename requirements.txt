@@ -1,0 +1,4 @@
+PyMuPDF==1.23.8
+Pillow==10.2.0
+numpy==1.26.3
+python-dotenv==1.0.0

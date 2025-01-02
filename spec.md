@@ -1,165 +1,149 @@
 # Problem Test Maker - Technical Documentation
 
-## Project Structure
-
-```
-/src
-  /python_dist/          # Python build output
-    problem_cutter/      # ProblemCutter onedir build
-  /lib/                  # Core JavaScript modules
-    test-maker.js
-    xml-builder.js
-    utils.js
-  main.js               # Electron main process
-  renderer.js           # Electron renderer process
-  preload.js            # Security preload script
-  /config
-    constants.js        # Constants and configurations
-```
-
 ## Core Components
 
-### 1. TestMaker (lib/test-maker.js)
+### 1. Python Programs
 
-Primary class responsible for generating QTI packages from image sets.
+#### ProblemCutter
+
+- **빌드 방식**: PyInstaller onedir 빌드
+- **주요 기능**: PDF 파일로부터 문제와 선지 이미지를 자동으로 분리
+- **실행 인자**:
+  ```bash
+  problem_cutter.exe [pdf_path] [output_dir] [name] [settings]
+  # settings: {"resolution": number, "margin": number}
+  ```
+
+### 2. Electron Application
+
+#### Project Structure
+
+```
+/project
+├── /src
+│   ├── /python_dist          # Python 빌드 출력물
+│   │   └── problem_cutter/   # ProblemCutter onedir
+│   ├── /lib
+│   │   ├── test-maker.js     # 테스트 생성 핵심 로직
+│   │   ├── xml-builder.js    # XML 생성 로직
+│   │   └── utils.js          # 유틸리티 함수
+│   ├── /config
+│   │   └── constants.js      # 상수 및 설정
+│   ├── main.js              # Electron 메인 프로세스
+│   ├── preload.js           # 보안을 위한 preload 스크립트
+│   ├── renderer.js          # 렌더러 프로세스
+│   └── index.html           # 메인 UI
+├── package.json
+├── build.bat                # Python 빌드 스크립트
+└── problem_cutter.spec      # PyInstaller 스펙
+```
 
 #### Configuration
 
-```javascript
+```json
 {
-  mediaDir: string,        // Default: process.env.MEDIA_DIR
-  questionSuffix: string,  // Default: process.env.QUESTION_SUFFIX
-  choicePattern: number[], // Default: JSON.parse(process.env.CHOICE_PATTERN)
-  tempDir: string         // Temporary directory for package creation
+  "settings": {
+    "pc": {
+      "resolution": 2,
+      "margin": 8
+    },
+    "tm": {
+      "timeLimit": 75,
+      "shuffleChoices": true
+    }
+  }
 }
 ```
 
-#### Methods
+#### Required Dependencies
 
-- `createPackage(inputDir, outputDir, name)`: Creates a QTI package
-  - Input: Directory containing problem images
-  - Output: ZIP file containing QTI package
-  - Returns: Path to created ZIP file
-
-#### Image File Structure
-
-- Question images: `{name}{number:02d}{questionSuffix}.png`
-- Choice images: `{name}{number:02d}{choice}.png`
-  - Example: For question 1
-    - Question: `test019.png`
-    - Choices: `test010.png`, `test011.png`, etc.
-
-### 2. XML Builder (lib/xml-builder.js)
-
-Handles creation of QTI XML files.
-
-#### Main Functions
-
-- `createQuizXml(name, images, config)`
-
-  - Creates assessment XML with questions and choices
-  - Schema version: 1.1.3
-  - Returns valid QTI XML string
-
-- `createManifestXml(name, assessmentId, images)`
-  - Creates IMS manifest XML
-  - Includes resource references for all images
-  - Returns valid manifest XML string
-
-#### XML Structure Requirements
-
-1. Assessment XML
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<questestinterop>
-  <assessment ident="{uuid}" title="{name}">
-    <qtimetadata>
-      <qtimetadatafield>
-        <fieldlabel>qmd_timelimit</fieldlabel>
-        <fieldentry>{timeLimit}</fieldentry>
-      </qtimetadatafield>
-    </qtimetadata>
-    <section ident="root_section">
-      <!-- Question items -->
-    </section>
-  </assessment>
-</questestinterop>
+```json
+{
+  "dependencies": {
+    "archiver": "^5.3.1",
+    "electron-store": "^8.1.0",
+    "uuid": "^9.0.0",
+    "xmlbuilder2": "^3.1.1"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
+    "rimraf": "^5.0.5"
+  }
+}
 ```
 
-2. Manifest XML
+## Core Features
 
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<manifest identifier="{uuid}">
-  <metadata>
-    <schema>IMS Content</schema>
-    <schemaversion>1.1.3</schemaversion>
-  </metadata>
-  <organizations/>
-  <resources>
-    <!-- Resource entries -->
-  </resources>
-</manifest>
-```
+### 1. PDF Processing (Python)
 
-### 3. Package Structure
+- Problem Cutter로 문제와 선지 이미지 분리
+- Resolution: 1-4배율 지원
+- Margin: 0-20px 지원
+- 자동 참조점 검출
 
-Final ZIP package should contain:
+### 2. Test Generation (Node.js)
+
+1. **이미지 수집 및 구조화**
+
+   ```javascript
+   {
+     question: "test019.png",
+     choices: ["test010.png", "test011.png"],
+     number: 1
+   }
+   ```
+
+2. **QTI XML 생성**
+
+   - Schema Version: 1.1.3
+   - Assessment Type: imsqti_xmlv1p2
+   - Question Type: multiple_choice_question
+
+3. **패키지 구조**
 
 ```
 {name}.zip
 ├── imsmanifest.xml
 ├── {assessment-id}/
 │   └── {assessment-id}.xml
-└── {mediaDir}/
+└── 업로드 된 미디어/
     ├── question1.png
     ├── choice1-1.png
     └── ...
 ```
 
+## File Processing Flow
+
+```
+PDF → ProblemCutter(Python) → 이미지 세트 → TestMaker(Node.js) → QTI 패키지
+```
+
 ## Implementation Notes
 
-1. Error Handling
+### Security
 
-   - Use try-catch blocks for file operations
-   - Implement cleanup in finally blocks
-   - Propagate meaningful error messages
+- Node API 직접 사용 제한
+- contextIsolation 활성화
+- preload 스크립트를 통한 API 제공
 
-2. File Operations
+### File Operations
 
-   - Use async/await for all file operations
-   - Ensure proper cleanup of temporary files
-   - Handle file name collisions
+- 비동기 파일 작업 처리
+- 안전한 경로 관리
+- 자동 디렉토리 생성
+- 임시 파일 정리
 
-3. XML Generation
+### UI/UX
 
-   - Use a reliable XML library (e.g., xmlbuilder2)
-   - Ensure proper encoding (UTF-8)
-   - Validate XML structure
+- 실시간 작업 상태 표시
+- 진행 상황 로깅
+- 간단한 설정 관리
+- 직관적인 파일 목록 관리
 
-4. Package Creation
-   - Use 'archiver' for ZIP creation
-   - Include all required files
-   - Maintain directory structure
+### Error Handling
 
-## Environment Variables
-
-```
-MEDIA_DIR=업로드 된 미디어
-QUESTION_SUFFIX=9
-CHOICE_PATTERN=[0,1,2,3]
-TEMP_DIR=./temp
-```
-
-## Dependencies
-
-Required npm packages:
-
-```json
-{
-  "archiver": "^5.3.1",
-  "uuid": "^9.0.0",
-  "xmlbuilder2": "^3.1.1"
-}
-```
+- Python 프로세스 에러 처리
+- 파일 작업 에러 처리
+- 사용자 친화적 에러 메시지
+- 전역 에러 캐치

@@ -6,3 +6,6 @@ python_dist
 temp
 tests
 .env
+src/python_dist
+venv
+dist

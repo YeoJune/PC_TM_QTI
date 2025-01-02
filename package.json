@@ -6,16 +6,21 @@
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build:python": ".\\build.bat",
+    "postinstall": "electron-builder install-app-deps"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "electron": "^28.0.0",
-    "electron-builder": "^24.9.1"
+    "electron-builder": "^24.9.1",
+    "rimraf": "^5.0.5"
   },
   "dependencies": {
-    "electron-store": "^8.1.0"
+    "archiver": "^5.3.1",
+    "electron-store": "^8.1.0",
+    "uuid": "^9.0.0",
+    "xmlbuilder2": "^3.1.1"
   },
   "build": {
     "appId": "com.problemtestmaker.app",
@@ -31,9 +36,17 @@
     },
     "extraResources": [
       {
-        "from": "cpp_dist",
-        "to": "bin"
+        "from": "python_dist",
+        "to": "bin",
+        "filter": [
+          "**/*"
+        ]
       }
-    ]
+    ],
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "asar": true
   }
 }
