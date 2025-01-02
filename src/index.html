@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>ProblemCutter + TestMaker</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <!-- PDF 파일 영역 -->
+      <div class="file-section">
+        <h3>PDF 파일 폴더</h3>
+        <div class="path-control">
+          <input type="text" class="path-input" id="pdfPath" value="./pdfs" />
+          <div class="button-group">
+            <button onclick="updateList('pdf')">새로고침</button>
+            <button onclick="openFolder('pdf')">열기</button>
+          </div>
+        </div>
+        <select multiple id="pdfList" class="file-list"></select>
+        <div class="button-group">
+          <button onclick="toggleSelectAll('pdf')">전체 선택</button>
+          <button onclick="deleteSelected('pdf')" class="delete-btn">
+            삭제
+          </button>
+        </div>
+      </div>
+
+      <!-- PC 설정 영역 -->
+      <div class="settings-section">
+        <div class="pc-settings">
+          <div class="setting-item">
+            <label>해상도 배율:</label>
+            <input type="number" id="resolution" value="2" min="1" max="4" />
+          </div>
+          <div class="setting-item">
+            <label>여백:</label>
+            <input type="number" id="margin" value="8" min="0" max="20" />
+          </div>
+          <button onclick="processPDF()" class="process-btn">→</button>
+        </div>
+      </div>
+
+      <!-- 이미지 파일 영역 -->
+      <div class="file-section">
+        <h3>이미지 파일 폴더</h3>
+        <div class="path-control">
+          <input type="text" class="path-input" id="imgPath" value="./imgs" />
+          <div class="button-group">
+            <button onclick="updateList('img')">새로고침</button>
+            <button onclick="openFolder('img')">열기</button>
+          </div>
+        </div>
+        <select multiple id="imgList" class="file-list"></select>
+        <div class="button-group">
+          <button onclick="toggleSelectAll('img')">전체 선택</button>
+          <button onclick="deleteSelected('img')" class="delete-btn">
+            삭제
+          </button>
+          <button onclick="previewImages()" class="preview-btn">프리뷰</button>
+        </div>
+      </div>
+
+      <!-- TM 설정 영역 -->
+      <div class="settings-section">
+        <div class="tm-settings">
+          <div class="setting-item">
+            <label>시험 시간(분):</label>
+            <input type="number" id="timeLimit" value="75" min="1" />
+          </div>
+          <div class="setting-item">
+            <label>선지 섞기:</label>
+            <input type="checkbox" id="shuffleChoices" checked />
+          </div>
+          <button onclick="processImages()" class="process-btn">→</button>
+        </div>
+      </div>
+
+      <!-- ZIP 파일 영역 -->
+      <div class="file-section">
+        <h3>테스트 파일 폴더</h3>
+        <div class="path-control">
+          <input type="text" class="path-input" id="zipPath" value="./tests" />
+          <div class="button-group">
+            <button onclick="updateList('zip')">새로고침</button>
+            <button onclick="openFolder('zip')">열기</button>
+          </div>
+        </div>
+        <select multiple id="zipList" class="file-list"></select>
+        <div class="button-group">
+          <button onclick="toggleSelectAll('zip')">전체 선택</button>
+          <button onclick="deleteSelected('zip')" class="delete-btn">
+            삭제
+          </button>
+        </div>
+      </div>
+
+      <!-- 로그 영역 -->
+      <div class="log-section">
+        <textarea id="logArea" readonly></textarea>
+        <button onclick="clearLog()" class="clear-btn">로그 초기화</button>
+      </div>
+    </div>
+    <script src="renderer.js"></script>
+  </body>
+</html>

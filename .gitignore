@@ -1,0 +1,8 @@
+build
+imgs
+node_modules
+pdfs
+python_dist
+temp
+tests
+.env

@@ -1,0 +1,39 @@
+{
+  "name": "problem-test-maker",
+  "version": "1.0.0",
+  "description": "PDF Problem Cutter and Test Maker",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0"
+  },
+  "build": {
+    "appId": "com.problemtestmaker.app",
+    "productName": "ProblemTestMaker",
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        "dir"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "extraResources": [
+      {
+        "from": "cpp_dist",
+        "to": "bin"
+      }
+    ]
+  }
+}
