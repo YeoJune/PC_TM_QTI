@@ -36,7 +36,7 @@
     },
     "extraResources": [
       {
-        "from": "python_dist",
+        "from": "src/python_dist",
         "to": "bin",
         "filter": [
           "**/*"

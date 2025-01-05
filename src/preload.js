@@ -49,4 +49,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     showSaveDialog: (options) =>
       ipcRenderer.invoke("dialog:showSaveDialog", options),
   },
+  getAppPath: () => ipcRenderer.invoke("get-app-path"),
+  getAbsolutePath: (relativePath) =>
+    ipcRenderer.invoke("get-absolute-path", relativePath),
 });

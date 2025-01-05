@@ -1,80 +1,280 @@
 /* src/styles.css */
 
 body {
-  font-family: Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   margin: 0;
   padding: 20px;
-  background-color: #f0f0f0;
-}
-
-.container {
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-section {
-  background: white;
-  padding: 20px;
-  margin-bottom: 20px;
-  border-radius: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-h2 {
-  margin-top: 0;
-  margin-bottom: 15px;
+  background-color: #f5f5f5;
   color: #333;
 }
 
-label {
-  display: inline-block;
-  width: 100px;
-  margin-right: 10px;
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 20px;
 }
 
-input[type="text"] {
-  width: 200px;
-  padding: 5px;
-  margin-right: 10px;
+.section {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-input[type="number"] {
-  width: 60px;
-  padding: 5px;
+.section h2 {
+  margin: 0 0 15px 0;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.path-input {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.path-input input[type="text"] {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
 }
 
 select[multiple] {
   width: 100%;
-  height: 150px;
-  margin: 10px 0;
+  height: 200px;
   border: 1px solid #ddd;
+  border-radius: 4px;
+  margin: 10px 0;
+  padding: 4px;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.setting-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.setting-group label {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+input[type="number"] {
+  width: 60px;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }
 
 button {
-  padding: 5px 10px;
-  margin-right: 5px;
-  background-color: #4caf50;
-  color: white;
+  padding: 6px 12px;
   border: none;
-  border-radius: 3px;
+  border-radius: 4px;
+  background-color: #4a90e2;
+  color: white;
   cursor: pointer;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 button:hover {
-  background-color: #45a049;
+  background-color: #357abd;
 }
 
-button:disabled {
-  background-color: #cccccc;
-  cursor: not-allowed;
+button.delete {
+  background-color: #dc3545;
+}
+
+button.delete:hover {
+  background-color: #c82333;
+}
+
+.log-section {
+  grid-column: 1 / -1;
 }
 
 #logArea {
   width: 100%;
   height: 150px;
-  margin-bottom: 10px;
   padding: 10px;
-  resize: vertical;
   border: 1px solid #ddd;
+  border-radius: 4px;
   font-family: monospace;
+  font-size: 14px;
+  resize: vertical;
+  background-color: #f8f9fa;
+}
+
+.option-running {
+  background-color: #fff3cd;
+}
+
+.button-group {
+  display: flex;
+  gap: 8px;
+}
+
+/* 목록 스타일 개선 */
+select[multiple] option {
+  padding: 6px 8px;
+  border-bottom: 1px solid #eee;
+}
+
+select[multiple] option:last-child {
+  border-bottom: none;
+}
+
+/* 전체 선택 컨트롤 스타일 */
+.select-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+
+.select-all {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+/* 선택된 항목 스타일 개선 */
+select[multiple] option:checked {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+/* 기존 CSS에 추가 */
+.option-running {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  font-style: italic;
+}
+
+select[multiple] option {
+  padding: 8px 12px;
+  margin: 2px 0;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+select[multiple] option:hover {
+  background-color: #f5f5f5;
+}
+
+select[multiple] option.option-running:after {
+  content: " ⟳";
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 모달 스타일 추가 */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.modal.show {
+  display: flex;
+  opacity: 1;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  transform: translateY(-20px);
+  transition: transform 0.2s ease-in-out;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal.show .modal-content {
+  transform: translateY(0);
+}
+
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+}
+
+.modal-close:hover {
+  color: #333;
+}
+
+.modal-body {
+  padding: 20px;
+  color: #666;
+}
+
+.modal-footer {
+  padding: 16px 20px;
+  border-top: 1px solid #eee;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modal-footer button {
+  min-width: 80px;
+}
+
+.modal-footer button.secondary {
+  background-color: #6c757d;
+}
+
+.modal-footer button.secondary:hover {
+  background-color: #5a6268;
 }

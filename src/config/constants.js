@@ -6,8 +6,8 @@ const CONSTANTS = {
   DEFAULT_SETTINGS: {
     points_possible: 1.0,
     time_limit: 75,
-    allowed_attempts: 1,
-    shuffle_answers: false,
+    allowed_attempts: 3,
+    shuffle_answers: true,
     correct_answer_index: 0, // 모든 문제의 정답을 1번으로 설정
   },
   XML_TEMPLATES: {

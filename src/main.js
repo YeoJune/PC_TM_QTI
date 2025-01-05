@@ -5,6 +5,9 @@ const fs = require("fs").promises;
 const Store = require("electron-store");
 const { spawn } = require("child_process");
 const { TestMaker } = require("./lib/test-maker");
+const pLimit = require("p-limit");
+const CONCURRENT_LIMIT = 4; // 병렬 처리 개수 상수 설정
+const limit = pLimit(CONCURRENT_LIMIT);
 
 // 설정 저장소 초기화
 const store = new Store();
@@ -64,30 +67,32 @@ app.on("activate", () => {
 
 // Python 실행 파일 실행 핸들러
 ipcMain.handle("run-executable", async (event, { exeName, args }) => {
-  const exePath =
-    process.env.ELECTRON_IS_DEV === "1"
-      ? path.join(__dirname, "python_dist", exeName, `${exeName}.exe`)
-      : path.join(process.resourcesPath, "bin", exeName, `${exeName}.exe`);
+  return limit(async () => {
+    const exePath =
+      process.env.ELECTRON_IS_DEV === "1"
+        ? path.join(__dirname, "python_dist", exeName, `${exeName}.exe`)
+        : path.join(process.resourcesPath, "bin", exeName, `${exeName}.exe`);
 
-  return new Promise((resolve, reject) => {
-    const childProcess = spawn(exePath, args);
-    let output = "";
-    let error = "";
+    return new Promise((resolve, reject) => {
+      const childProcess = spawn(exePath, args);
+      let output = "";
+      let error = "";
 
-    childProcess.stdout.on("data", (data) => {
-      output += data.toString();
-    });
+      childProcess.stdout.on("data", (data) => {
+        output += data.toString();
+      });
 
-    childProcess.stderr.on("data", (data) => {
-      error += data.toString();
-    });
+      childProcess.stderr.on("data", (data) => {
+        error += data.toString();
+      });
 
-    childProcess.on("close", (code) => {
-      if (code === 0) {
-        resolve(output);
-      } else {
-        reject(new Error(error || `Process exited with code ${code}`));
-      }
+      childProcess.on("close", (code) => {
+        if (code === 0) {
+          resolve(output);
+        } else {
+          reject(new Error(error || `Process exited with code ${code}`));
+        }
+      });
     });
   });
 });
@@ -95,17 +100,19 @@ ipcMain.handle("run-executable", async (event, { exeName, args }) => {
 ipcMain.handle(
   "process-testmaker",
   async (event, { imgDir, zipDir, folder, config }) => {
-    try {
-      const testMaker = new TestMaker(config);
-      await testMaker.createPackage(
-        path.join(imgDir, folder), // input directory
-        zipDir, // output directory
-        folder // name
-      );
-      return true;
-    } catch (error) {
-      throw new Error(`TestMaker 처리 실패: ${error.message}`);
-    }
+    return limit(async () => {
+      try {
+        const testMaker = new TestMaker(config);
+        await testMaker.createPackage(
+          path.join(imgDir, folder), // input directory
+          zipDir, // output directory
+          folder // name
+        );
+        return true;
+      } catch (error) {
+        throw new Error(`TestMaker 처리 실패: ${error.message}`);
+      }
+    });
   }
 );
 
@@ -177,4 +184,12 @@ ipcMain.handle("dialog:showOpenDialog", async (event, options) => {
 
 ipcMain.handle("dialog:showSaveDialog", async (event, options) => {
   return dialog.showSaveDialog(options);
+});
+
+ipcMain.handle("get-app-path", () => {
+  return app.getAppPath();
+});
+
+ipcMain.handle("get-absolute-path", (event, relativePath) => {
+  return path.resolve(app.getAppPath(), relativePath.replace(/^\.\//, ""));
 });

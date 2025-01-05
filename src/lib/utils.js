@@ -1,7 +1,6 @@
 // src/lib/utils.js
 const fs = require("fs").promises;
 const path = require("path");
-const { rimraf } = require("rimraf"); // rimraf 가져오는 방식 변경
 
 class FileUtils {
   constructor(config) {
@@ -49,21 +48,21 @@ class FileUtils {
     return images;
   }
 
-  async copyImagesToTemp(images, inputDir, tempDir, name) {
+  async copyImagesToTemp(images, inputDir, tempDir) {
     const mediaDir = path.join(tempDir, this.config.mediaDir);
     await fs.mkdir(mediaDir, { recursive: true });
 
     for (const image of images) {
-      // 문제 이미지 복사
+      // Copy question image
       await this.copyFile(
-        path.join(inputDir, image.question), // name 제거
+        path.join(inputDir, image.question),
         path.join(mediaDir, image.question)
       );
 
-      // 선지 이미지 복사
+      // Copy choice images
       for (const choice of image.choices) {
         await this.copyFile(
-          path.join(inputDir, choice), // name 제거
+          path.join(inputDir, choice),
           path.join(mediaDir, choice)
         );
       }
@@ -77,7 +76,7 @@ class FileUtils {
 
   async cleanupTempDir(tempDir) {
     if (await this.fileExists(tempDir)) {
-      await rimraf(tempDir); // Promise를 직접 사용
+      await fs.rm(tempDir, { recursive: true, force: true });
     }
   }
 

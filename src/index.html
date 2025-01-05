@@ -8,50 +8,123 @@
   <body>
     <div class="container">
       <!-- PDF 섹션 -->
-      <section>
-        <h2>PDF 처리</h2>
-        <div>
-          <label>PDF 폴더:</label>
+      <div class="section">
+        <h2>📄 PDF 처리</h2>
+        <div class="path-input">
           <input type="text" id="pdfPath" value="./pdfs" />
           <button onclick="updateList('pdf')">새로고침</button>
           <button onclick="openFolder('pdf')">폴더 열기</button>
         </div>
-        <select multiple id="pdfList"></select>
-        <div>
-          <label>해상도:</label>
-          <input type="number" id="resolution" value="2" min="1" max="4" />
-          <label>여백:</label>
-          <input type="number" id="margin" value="8" min="0" max="20" />
-          <button onclick="processPDF()">PDF 처리</button>
-          <button onclick="deleteSelected('pdf')">선택 삭제</button>
+        <div class="select-controls">
+          <label class="select-all">
+            <input type="checkbox" onchange="toggleSelectAll('pdf')" />
+            전체 선택
+          </label>
         </div>
-      </section>
+        <select multiple id="pdfList" onclick="toggleSelection(event)"></select>
+        <div class="controls">
+          <div class="setting-group">
+            <label>해상도:</label>
+            <input type="number" id="resolution" value="2" min="1" max="4" />
+          </div>
+          <div class="setting-group">
+            <label>여백:</label>
+            <input type="number" id="margin" value="8" min="0" max="20" />
+          </div>
+          <div class="button-group">
+            <button onclick="processPDF()">PDF 처리</button>
+            <button class="delete" onclick="deleteSelected('pdf')">
+              선택 삭제
+            </button>
+          </div>
+        </div>
+      </div>
 
       <!-- 이미지 섹션 -->
-      <section>
-        <h2>이미지 처리</h2>
-        <div>
-          <label>이미지 폴더:</label>
+      <div class="section">
+        <h2>🖼️ 이미지 처리</h2>
+        <div class="path-input">
           <input type="text" id="imgPath" value="./imgs" />
           <button onclick="updateList('img')">새로고침</button>
           <button onclick="openFolder('img')">폴더 열기</button>
         </div>
-        <select multiple id="imgList"></select>
-        <div>
-          <label>시험 시간(분):</label>
-          <input type="number" id="timeLimit" value="75" min="1" />
-          <label>선지 섞기:</label>
-          <input type="checkbox" id="shuffleChoices" checked />
-          <button onclick="processImages()">이미지 처리</button>
-          <button onclick="deleteSelected('img')">선택 삭제</button>
+        <div class="select-controls">
+          <label class="select-all">
+            <input type="checkbox" onchange="toggleSelectAll('img')" />
+            전체 선택
+          </label>
         </div>
-      </section>
+        <select multiple id="imgList" onclick="toggleSelection(event)"></select>
+        <div class="controls">
+          <div class="setting-group">
+            <label>시험 시간(분):</label>
+            <input type="number" id="timeLimit" value="75" min="1" />
+          </div>
+          <div class="setting-group">
+            <label>
+              <input type="checkbox" id="shuffleChoices" checked />
+              선지 섞기
+            </label>
+          </div>
+          <div class="button-group">
+            <button onclick="processImages()">이미지 처리</button>
+            <button class="delete" onclick="deleteSelected('img')">
+              선택 삭제
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 테스트 결과 섹션 -->
+      <div class="section">
+        <h2>📝 테스트 결과</h2>
+        <div class="path-input">
+          <input type="text" id="testsPath" value="./tests" />
+          <button onclick="updateList('tests')">새로고침</button>
+          <button onclick="openFolder('tests')">폴더 열기</button>
+        </div>
+        <div class="select-controls">
+          <label class="select-all">
+            <input type="checkbox" onchange="toggleSelectAll('tests')" />
+            전체 선택
+          </label>
+        </div>
+        <select
+          multiple
+          id="testsList"
+          onclick="toggleSelection(event)"></select>
+        <div class="controls">
+          <div class="button-group">
+            <button onclick="deleteSelected('tests')">선택 삭제</button>
+          </div>
+        </div>
+      </div>
 
       <!-- 로그 섹션 -->
-      <section>
+      <div class="section log-section">
+        <h2>📋 작업 로그</h2>
         <textarea id="logArea" readonly></textarea>
-        <button onclick="clearLog()">로그 지우기</button>
-      </section>
+        <div class="controls">
+          <button onclick="clearLog()">로그 지우기</button>
+        </div>
+      </div>
+    </div>
+    <div id="modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modal-title"></h3>
+          <button class="modal-close" onclick="closeModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <p id="modal-message"></p>
+        </div>
+        <div class="modal-footer">
+          <button id="modal-confirm" onclick="closeModal()">확인</button>
+          <button id="modal-cancel" class="secondary" onclick="closeModal()">
+            취소
+          </button>
+        </div>
+      </div>
     </div>
     <script src="renderer.js"></script>
   </body>

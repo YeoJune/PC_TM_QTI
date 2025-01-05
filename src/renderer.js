@@ -1,6 +1,5 @@
-// src/renderer.js
 // 현재 실행 중인 작업 상태 관리
-let runningTasks = new Set();
+let runningTasks = new Map(); // Set 대신 Map 사용하여 진행 상태 추적
 
 // 파일 목록 업데이트
 async function updateList(type) {
@@ -20,6 +19,7 @@ async function updateList(type) {
     const filteredFiles = files.filter((file) => {
       if (type === "pdf") return file.endsWith(".pdf");
       if (type === "img") return !file.includes(".");
+      if (type === "tests") return file.endsWith(".zip");
       return false;
     });
 
@@ -29,9 +29,14 @@ async function updateList(type) {
       const option = document.createElement("option");
       option.text = file;
       option.value = file;
+
+      // 진행 중인 작업 상태 표시
       if (runningTasks.has(file)) {
-        option.style.backgroundColor = "#fff3cd";
+        const progress = runningTasks.get(file);
+        option.classList.add("option-running");
+        option.text = `${file} (처리 중...)`;
       }
+
       listElement.add(option);
     });
 
@@ -41,17 +46,42 @@ async function updateList(type) {
   }
 }
 
+// 전체 선택 토글
+function toggleSelectAll(type) {
+  const list = document.getElementById(`${type}List`);
+  const checkbox = event.target;
+
+  for (const option of list.options) {
+    option.selected = checkbox.checked;
+  }
+}
+
+// 항목 선택 토글
+function toggleSelection(event) {
+  // 선택이 변경될 때마다 전체 선택 체크박스 상태만 업데이트
+  const select = event.currentTarget; // select 엘리먼트
+  const type = select.id.replace("List", "");
+  const checkbox = document.querySelector(
+    `input[onchange="toggleSelectAll('${type}')"]`
+  );
+  const allSelected = [...select.options].every((opt) => opt.selected);
+  checkbox.checked = allSelected;
+}
+
 // 폴더 열기
 async function openFolder(type) {
   const dirPath = document.getElementById(`${type}Path`).value;
+
   try {
-    await window.electronAPI.shell.openPath(dirPath);
+    const absolutePath = await window.electronAPI.getAbsolutePath(dirPath);
+    await window.electronAPI.shell.openPath(absolutePath);
   } catch (error) {
     addLog(`[오류] 폴더 열기 실패: ${error.message}`);
   }
 }
 
 // 선택된 항목 삭제
+
 async function deleteSelected(type) {
   const list = document.getElementById(`${type}List`);
   const dirPath = document.getElementById(`${type}Path`).value;
@@ -59,30 +89,29 @@ async function deleteSelected(type) {
 
   if (selectedOptions.length === 0) return;
 
-  const result = await window.electronAPI.dialog.showMessageBox({
-    type: "question",
-    buttons: ["예", "아니오"],
-    defaultId: 1,
+  showModal({
     title: "확인",
     message: "선택된 항목을 삭제하시겠습니까?",
+    showCancel: true,
+    async onConfirm() {
+      for (const option of selectedOptions) {
+        try {
+          const absolutePath = await window.electronAPI.getAbsolutePath(
+            dirPath
+          );
+          const filePath = await window.electronAPI.path.join(
+            absolutePath,
+            option.value
+          );
+          await window.electronAPI.shell.trashItem(filePath);
+          addLog(`${option.value} 삭제됨`);
+        } catch (error) {
+          addLog(`[오류] 삭제 실패 (${option.value}): ${error.message}`);
+        }
+      }
+      await updateList(type);
+    },
   });
-
-  if (result.response === 1) return;
-
-  for (const option of selectedOptions) {
-    try {
-      const filePath = await window.electronAPI.path.join(
-        dirPath,
-        option.value
-      );
-      await window.electronAPI.shell.trashItem(filePath);
-      addLog(`${option.value} 삭제됨`);
-    } catch (error) {
-      addLog(`[오류] 삭제 실패 (${option.value}): ${error.message}`);
-    }
-  }
-
-  await updateList(type);
 }
 
 // PDF 처리
@@ -105,14 +134,14 @@ async function processPDF() {
 
   addLog("[PDF 처리] 시작: " + selectedFiles.join(", "));
 
-  for (const file of selectedFiles) {
+  const tasks = selectedFiles.map(async (file) => {
     try {
       const name = await window.electronAPI.path.basename(file, ".pdf");
       const pdfPath = await window.electronAPI.path.join(pdfDir, file);
       const outputDir = await window.electronAPI.path.join(imgDir, name);
 
       await window.electronAPI.fs.mkdir(outputDir);
-      runningTasks.add(file);
+      runningTasks.set(file, "processing");
       await updateList("pdf");
 
       await window.electronAPI.invoke("run-executable", {
@@ -129,10 +158,12 @@ async function processPDF() {
       runningTasks.delete(file);
       await updateList("pdf");
     }
-  }
+  });
 
-  await window.electronAPI.dialog.showMessageBox({
-    type: "info",
+  await Promise.allSettled(tasks);
+
+  showModal({
+    title: "완료",
     message: "모든 PDF 처리가 완료되었습니다.",
   });
 }
@@ -153,16 +184,15 @@ async function processImages() {
   };
 
   const imgDir = document.getElementById("imgPath").value;
-  const zipDir = await window.electronAPI.path.join(imgDir, "../zips"); // zips 디렉토리 경로 수정
+  const zipDir = await window.electronAPI.path.join(imgDir, "../tests");
 
-  // zips 디렉토리 생성 추가
   await window.electronAPI.fs.mkdir(zipDir);
 
   addLog("[이미지 처리] 시작: " + selectedFiles.join(", "));
 
-  for (const folder of selectedFiles) {
+  const tasks = selectedFiles.map(async (folder) => {
     try {
-      runningTasks.add(folder);
+      runningTasks.set(folder, "processing");
       await updateList("img");
 
       await window.electronAPI.invoke("process-testmaker", {
@@ -174,16 +204,19 @@ async function processImages() {
 
       runningTasks.delete(folder);
       await updateList("img");
+      await updateList("tests");
       addLog(`[완료] ${folder}`);
     } catch (error) {
       addLog(`[오류] ${folder}: ${error.message}`);
       runningTasks.delete(folder);
       await updateList("img");
     }
-  }
+  });
 
-  await window.electronAPI.dialog.showMessageBox({
-    type: "info",
+  await Promise.allSettled(tasks);
+
+  showModal({
+    title: "완료",
     message: "모든 이미지 처리가 완료되었습니다.",
   });
 }
@@ -200,11 +233,56 @@ function clearLog() {
   document.getElementById("logArea").value = "";
 }
 
+// 모달 표시 함수
+function showModal({
+  title,
+  message,
+  showCancel = false,
+  onConfirm = null,
+  onCancel = null,
+}) {
+  const modal = document.getElementById("modal");
+  const modalTitle = document.getElementById("modal-title");
+  const modalMessage = document.getElementById("modal-message");
+  const cancelButton = document.getElementById("modal-cancel");
+  const confirmButton = document.getElementById("modal-confirm");
+
+  modalTitle.textContent = title;
+  modalMessage.textContent = message;
+  cancelButton.style.display = showCancel ? "block" : "none";
+
+  // 이벤트 핸들러 설정
+  const handleConfirm = () => {
+    if (onConfirm) onConfirm();
+    closeModal();
+  };
+
+  const handleCancel = () => {
+    if (onCancel) onCancel();
+    closeModal();
+  };
+
+  confirmButton.onclick = handleConfirm;
+  cancelButton.onclick = handleCancel;
+
+  // 모달 표시
+  requestAnimationFrame(() => {
+    modal.classList.add("show");
+  });
+}
+
+// 모달 닫기 함수
+function closeModal() {
+  const modal = document.getElementById("modal");
+  modal.classList.remove("show");
+}
+
 // 초기화
 document.addEventListener("DOMContentLoaded", async () => {
   // 초기 파일 목록 로드
   await updateList("pdf");
   await updateList("img");
+  await updateList("tests");
 
   // 전역 에러 핸들러
   window.addEventListener("error", (event) => {
