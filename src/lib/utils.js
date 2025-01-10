@@ -1,6 +1,7 @@
 // src/lib/utils.js
 const fs = require("fs").promises;
 const path = require("path");
+const { v4: uuidv4 } = require("uuid");
 
 class FileUtils {
   constructor(config) {
@@ -52,21 +53,36 @@ class FileUtils {
     const mediaDir = path.join(tempDir, this.config.mediaDir);
     await fs.mkdir(mediaDir, { recursive: true });
 
+    // 파일 이름 매핑을 위한 객체
+    const fileMapping = new Map();
+
     for (const image of images) {
-      // Copy question image
+      // 문제 이미지 복사
+      const questionUuid = `${uuidv4()}.png`;
       await this.copyFile(
         path.join(inputDir, image.question),
-        path.join(mediaDir, image.question)
+        path.join(mediaDir, questionUuid)
       );
+      fileMapping.set(image.question, questionUuid);
 
-      // Copy choice images
+      // 선택지 이미지 복사
+      const newChoices = [];
       for (const choice of image.choices) {
+        const choiceUuid = `${uuidv4()}.png`;
         await this.copyFile(
           path.join(inputDir, choice),
-          path.join(mediaDir, choice)
+          path.join(mediaDir, choiceUuid)
         );
+        fileMapping.set(choice, choiceUuid);
+        newChoices.push(choiceUuid);
       }
+
+      // 원본 객체 업데이트
+      image.question = questionUuid;
+      image.choices = newChoices;
     }
+
+    return fileMapping;
   }
 
   async writeXMLFile(filePath, content) {

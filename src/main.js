@@ -102,11 +102,17 @@ ipcMain.handle(
   async (event, { imgDir, zipDir, folder, config }) => {
     return limit(async () => {
       try {
-        const testMaker = new TestMaker(config);
+        const tempDir = "./temp";
+        const testMaker = new TestMaker({
+          ...config,
+          tempDir: tempDir, // tempDir 설정 추가
+        });
+
         await testMaker.createPackage(
           path.join(imgDir, folder), // input directory
           zipDir, // output directory
-          folder // name
+          folder, // name
+          config.questionCount // questionCount 파라미터 추가
         );
         return true;
       } catch (error) {

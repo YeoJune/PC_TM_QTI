@@ -18,25 +18,52 @@ class TestMaker {
       pointsPerQuestion: CONSTANTS.DEFAULT_SETTINGS.points_possible,
       shuffleChoices: CONSTANTS.DEFAULT_SETTINGS.shuffle_answers,
       correctAnswerIndex: CONSTANTS.DEFAULT_SETTINGS.correct_answer_index,
+      questionsPerGroup: 2, // 기본값으로 2문제
       ...config,
     };
     this.xmlBuilder = new XMLBuilder(this.config);
     this.fileUtils = new FileUtils(this.config);
   }
 
-  async createPackage(inputDir, outputDir, name) {
+  async createPackage(inputDir, outputDir, name, questionCount) {
     const tempDir = path.join(this.config.tempDir, name);
     try {
-      const images = await this._collectAndCopyImages(inputDir, name, tempDir);
+      // 전체 이미지 수집
+      const allImages = await this._collectAndCopyImages(
+        inputDir,
+        name,
+        tempDir
+      );
 
-      if (!images.length) {
+      if (!allImages.length) {
         throw new Error("No valid questions found");
       }
 
-      const assessmentId = this._generateId();
-      await this._generateXMLFiles(name, assessmentId, images, tempDir);
+      // questionCount가 지정되지 않은 경우 전체 문제 사용
+      const finalQuestionCount = questionCount || allImages.length;
 
-      const zipPath = path.join(outputDir, `${name}(${images.length}).zip`);
+      // questionCount가 전체 문제 수보다 크면 에러
+      if (finalQuestionCount > allImages.length) {
+        throw new Error(
+          `Requested ${finalQuestionCount} questions but only ${allImages.length} questions available`
+        );
+      }
+
+      // 요청된 문제 수만큼만 선택
+      const selectedImages = allImages.slice(0, finalQuestionCount);
+
+      const assessmentId = this._generateId();
+      await this._generateXMLFiles(
+        name,
+        assessmentId,
+        selectedImages,
+        finalQuestionCount
+      );
+
+      const zipPath = path.join(
+        outputDir,
+        `${name}(${selectedImages.length}).zip`
+      );
       await this._createZipPackage(tempDir, zipPath);
 
       return zipPath;
@@ -53,11 +80,14 @@ class TestMaker {
     return images;
   }
 
-  async _generateXMLFiles(name, assessmentId, images, tempDir) {
+  async _generateXMLFiles(name, assessmentId, images, questionCount) {
+    const tempDir = path.join(this.config.tempDir, name); // tempDir 경로 추가
+
     const { quizXml, manifestXml } = this.xmlBuilder.generateXML(
       name,
       assessmentId,
-      images
+      images,
+      questionCount
     );
 
     await Promise.all([

@@ -178,9 +178,13 @@ async function processImages() {
     return;
   }
 
+  const questionCount = parseInt(
+    document.getElementById("questionCount").value
+  );
   const config = {
     timeLimit: parseInt(document.getElementById("timeLimit").value),
     shuffleChoices: document.getElementById("shuffleChoices").checked,
+    questionCount: questionCount || undefined, // 0이면 undefined로 설정하여 전체 문제 선택
   };
 
   const imgDir = document.getElementById("imgPath").value;
