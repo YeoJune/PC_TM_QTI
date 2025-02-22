@@ -1,55 +1,60 @@
 // src/preload.js
 const { contextBridge, ipcRenderer } = require("electron");
 
-// 전역 API 노출
-contextBridge.exposeInMainWorld("electronAPI", {
-  // IPC 통신
+const createApiMethod = (type, methods) => {
+  return Object.entries(methods).reduce((api, [key, channel]) => {
+    api[key] = (...args) => ipcRenderer.invoke(channel, ...args);
+    return api;
+  }, {});
+};
+
+const electronAPI = {
+  // 기본 IPC 통신
   invoke: (channel, data) => ipcRenderer.invoke(channel, data),
   send: (channel, data) => ipcRenderer.send(channel, data),
   on: (channel, callback) =>
     ipcRenderer.on(channel, (event, ...args) => callback(...args)),
 
-  // Store API
-  store: {
-    get: (key, defaultValue) =>
-      ipcRenderer.invoke("store:get", key, defaultValue),
-    set: (key, value) => ipcRenderer.invoke("store:set", key, value),
-  },
+  // 저장소 API
+  store: createApiMethod("store", {
+    get: "store:get",
+    set: "store:set",
+  }),
 
   // 파일 시스템 API
-  fs: {
-    readFile: (filePath, options) =>
-      ipcRenderer.invoke("fs:readFile", filePath, options),
-    writeFile: (filePath, data) =>
-      ipcRenderer.invoke("fs:writeFile", filePath, data),
-    exists: (filePath) => ipcRenderer.invoke("fs:exists", filePath),
-    mkdir: (dirPath) => ipcRenderer.invoke("fs:mkdir", dirPath),
-    readdir: (dirPath) => ipcRenderer.invoke("fs:readdir", dirPath),
-  },
+  fs: createApiMethod("fs", {
+    readFile: "fs:readFile",
+    writeFile: "fs:writeFile",
+    exists: "fs:exists",
+    mkdir: "fs:mkdir",
+    readdir: "fs:readdir",
+  }),
 
   // 경로 API
-  path: {
-    join: (...args) => ipcRenderer.invoke("path:join", ...args),
-    resolve: (...args) => ipcRenderer.invoke("path:resolve", ...args),
-    basename: (path, ext) => ipcRenderer.invoke("path:basename", path, ext),
-  },
+  path: createApiMethod("path", {
+    join: "path:join",
+    resolve: "path:resolve",
+    basename: "path:basename",
+  }),
 
-  // 쉘 API
-  shell: {
-    openPath: (path) => ipcRenderer.invoke("shell:openPath", path),
-    trashItem: (path) => ipcRenderer.invoke("shell:trashItem", path),
-  },
+  // 셸 API
+  shell: createApiMethod("shell", {
+    openPath: "shell:openPath",
+    trashItem: "shell:trashItem",
+  }),
 
   // 대화상자 API
-  dialog: {
-    showMessageBox: (options) =>
-      ipcRenderer.invoke("dialog:showMessageBox", options),
-    showOpenDialog: (options) =>
-      ipcRenderer.invoke("dialog:showOpenDialog", options),
-    showSaveDialog: (options) =>
-      ipcRenderer.invoke("dialog:showSaveDialog", options),
-  },
-  getAppPath: () => ipcRenderer.invoke("get-app-path"),
-  getAbsolutePath: (relativePath) =>
-    ipcRenderer.invoke("get-absolute-path", relativePath),
-});
+  dialog: createApiMethod("dialog", {
+    showMessageBox: "dialog:showMessageBox",
+    showOpenDialog: "dialog:showOpenDialog",
+    showSaveDialog: "dialog:showSaveDialog",
+  }),
+
+  // 작업 디렉토리 API
+  getWorkingDir: (type) => ipcRenderer.invoke("get-working-dir", type),
+  checkDirectoryAccess: (type) =>
+    ipcRenderer.invoke("check-directory-access", type),
+};
+
+// API 노출
+contextBridge.exposeInMainWorld("electronAPI", electronAPI);
