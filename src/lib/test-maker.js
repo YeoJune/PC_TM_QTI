@@ -39,30 +39,28 @@ class TestMaker {
         throw new Error("No valid questions found");
       }
 
-      // questionCount가 지정되지 않은 경우 전체 문제 사용
-      const finalQuestionCount = questionCount || allImages.length;
+      const selectedImages = allImages;
 
-      // questionCount가 전체 문제 수보다 크면 에러
-      if (finalQuestionCount > allImages.length) {
+      questionCount = questionCount || selectedImages.length;
+
+      // questionCount가 전체 문제 수보다 크면 에러 (그룹당 선택 수 검증)
+      if (questionCount && questionCount > allImages.length) {
         throw new Error(
-          `Requested ${finalQuestionCount} questions but only ${allImages.length} questions available`
+          `Requested ${questionCount} questions per group but only ${allImages.length} questions available`
         );
       }
-
-      // 요청된 문제 수만큼만 선택
-      const selectedImages = allImages.slice(0, finalQuestionCount);
 
       const assessmentId = this._generateId();
       await this._generateXMLFiles(
         name,
         assessmentId,
         selectedImages,
-        finalQuestionCount
+        questionCount
       );
 
       const zipPath = path.join(
         outputDir,
-        `${name}(${selectedImages.length}).zip`
+        `${name}(${questionCount},${selectedImages.length}).zip`
       );
       await this._createZipPackage(tempDir, zipPath);
 
@@ -81,7 +79,7 @@ class TestMaker {
   }
 
   async _generateXMLFiles(name, assessmentId, images, questionCount) {
-    const tempDir = path.join(this.config.tempDir, name); // tempDir 경로 추가
+    const tempDir = path.join(this.config.tempDir, name);
 
     const { quizXml, manifestXml } = this.xmlBuilder.generateXML(
       name,

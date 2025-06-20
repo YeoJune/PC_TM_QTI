@@ -26,7 +26,7 @@ class XMLBuilder {
     const assessment = root
       .ele("assessment")
       .att("ident", assessmentId)
-      .att("title", name);
+      .att("title", `${name}(${questionCount}/${images.length})`);
 
     // Add assessment metadata
     const assessmentMetadata = assessment.ele("qtimetadata");
