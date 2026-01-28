@@ -2,120 +2,139 @@
 const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
-const archiver = require("archiver");
+const pLimit = require("p-limit");
+const { DriveUploader } = require("./drive-uploader");
 const { XMLBuilder } = require("./xml-builder");
 const { FileUtils } = require("./utils");
 const { CONSTANTS } = require("../config/constants");
 
+const UPLOAD_CONCURRENCY = 10; // 동시 업로드 수
+
 class TestMaker {
   constructor(config = {}) {
     this.config = {
-      mediaDir: process.env.MEDIA_DIR || "업로드 된 미디어",
       questionSuffix: process.env.QUESTION_SUFFIX || "9",
       choicePattern: JSON.parse(process.env.CHOICE_PATTERN || "[0,1,2,3]"),
       tempDir: process.env.TEMP_DIR || "./temp",
       timeLimit: CONSTANTS.DEFAULT_SETTINGS.time_limit,
-      pointsPerQuestion: CONSTANTS.DEFAULT_SETTINGS.points_possible,
       shuffleChoices: CONSTANTS.DEFAULT_SETTINGS.shuffle_answers,
       correctAnswerIndex: CONSTANTS.DEFAULT_SETTINGS.correct_answer_index,
-      questionsPerGroup: 2, // 기본값으로 2문제
+      driveFolderId: null, // 루트 폴더 ID
       ...config,
     };
-    this.xmlBuilder = new XMLBuilder(this.config);
+
     this.fileUtils = new FileUtils(this.config);
+    this.driveUploader = new DriveUploader(
+      "./credentials.json",
+      "./token.json",
+      this.config.driveFolderId,
+    );
+    this.xmlBuilder = new XMLBuilder({
+      shuffleAnswers: this.config.shuffleChoices,
+      correctAnswerIndex: this.config.correctAnswerIndex,
+    });
   }
 
   async createPackage(inputDir, outputDir, name, questionCount) {
-    const tempDir = path.join(this.config.tempDir, name);
     try {
-      // 전체 이미지 수집
-      const allImages = await this._collectAndCopyImages(
-        inputDir,
-        name,
-        tempDir
-      );
+      // Drive 초기화
+      console.log("Initializing Google Drive...");
+      await this.driveUploader.initialize();
+
+      // 이미지 수집
+      console.log("Collecting images...");
+      const allImages = await this.fileUtils.collectImages(inputDir, name);
 
       if (!allImages.length) {
         throw new Error("No valid questions found");
       }
 
       const selectedImages = allImages;
-
       questionCount = questionCount || selectedImages.length;
 
-      // questionCount가 전체 문제 수보다 크면 에러 (그룹당 선택 수 검증)
       if (questionCount && questionCount > allImages.length) {
         throw new Error(
-          `Requested ${questionCount} questions per group but only ${allImages.length} questions available`
+          `Requested ${questionCount} questions but only ${allImages.length} questions available`,
         );
       }
 
-      const assessmentId = this._generateId();
-      await this._generateXMLFiles(
-        name,
-        assessmentId,
+      // Drive 폴더 생성
+      console.log(`Creating Drive folder: ${name}`);
+      const folderId = await this.driveUploader.createFolder(name);
+
+      // 이미지 업로드
+      console.log("Uploading images to Google Drive...");
+      const driveFileIds = await this._uploadAllImages(
+        inputDir,
         selectedImages,
-        questionCount
+        folderId,
       );
 
-      const zipPath = path.join(
+      // XML 생성
+      console.log("Generating Moodle XML...");
+      const xmlContent = this.xmlBuilder.generateXML(
+        name,
+        selectedImages,
+        driveFileIds,
+      );
+
+      // XML 파일 저장
+      const xmlPath = path.join(
         outputDir,
-        `${name}(${questionCount},${selectedImages.length}).zip`
+        `${name}(${questionCount},${selectedImages.length}).xml`,
       );
-      await this._createZipPackage(tempDir, zipPath);
+      await this.fileUtils.writeXMLFile(xmlPath, xmlContent);
 
-      return zipPath;
+      console.log(`Package created: ${xmlPath}`);
+      return xmlPath;
     } catch (error) {
       throw new Error(`Failed to create package: ${error.message}`);
-    } finally {
-      await this.fileUtils.cleanupTempDir(tempDir);
     }
   }
 
-  async _collectAndCopyImages(inputDir, name, tempDir) {
-    const images = await this.fileUtils.collectImages(inputDir, name);
-    await this.fileUtils.copyImagesToTemp(images, inputDir, tempDir);
-    return images;
-  }
+  async _uploadAllImages(inputDir, images, folderId) {
+    const driveFileIds = new Map();
+    const limit = pLimit(UPLOAD_CONCURRENCY);
+    const uploadTasks = [];
 
-  async _generateXMLFiles(name, assessmentId, images, questionCount) {
-    const tempDir = path.join(this.config.tempDir, name);
+    for (const image of images) {
+      // 문제 이미지 업로드 태스크
+      const questionTask = limit(async () => {
+        const questionPath = path.join(inputDir, image.question);
+        const questionUuid = `${uuidv4()}.png`;
 
-    const { quizXml, manifestXml } = this.xmlBuilder.generateXML(
-      name,
-      assessmentId,
-      images,
-      questionCount
-    );
+        console.log(`Uploading question: ${image.question} as ${questionUuid}`);
+        const questionFileId = await this.driveUploader.uploadImageWithName(
+          questionPath,
+          questionUuid,
+          folderId,
+        );
+        driveFileIds.set(image.question, questionFileId);
+      });
+      uploadTasks.push(questionTask);
 
-    await Promise.all([
-      this.fileUtils.writeXMLFile(
-        path.join(tempDir, assessmentId, `${assessmentId}.xml`),
-        quizXml
-      ),
-      this.fileUtils.writeXMLFile(
-        path.join(tempDir, "imsmanifest.xml"),
-        manifestXml
-      ),
-    ]);
-  }
+      // 선지 이미지 업로드 태스크
+      for (const choice of image.choices) {
+        const choiceTask = limit(async () => {
+          const choicePath = path.join(inputDir, choice);
+          const choiceUuid = `${uuidv4()}.png`;
 
-  async _createZipPackage(tempDir, zipPath) {
-    return new Promise((resolve, reject) => {
-      const output = fs.createWriteStream(zipPath);
-      const archive = archiver("zip", { zlib: { level: 9 } });
+          console.log(`Uploading choice: ${choice} as ${choiceUuid}`);
+          const choiceFileId = await this.driveUploader.uploadImageWithName(
+            choicePath,
+            choiceUuid,
+            folderId,
+          );
+          driveFileIds.set(choice, choiceFileId);
+        });
+        uploadTasks.push(choiceTask);
+      }
+    }
 
-      output.on("close", () => resolve(zipPath));
-      archive.on("error", (err) => reject(err));
+    // 모든 업로드 태스크 병렬 실행
+    await Promise.all(uploadTasks);
 
-      archive.pipe(output);
-      archive.directory(tempDir, false);
-      archive.finalize();
-    });
-  }
-
-  _generateId() {
-    return "g" + uuidv4().replace(/-/g, "");
+    return driveFileIds;
   }
 }
 

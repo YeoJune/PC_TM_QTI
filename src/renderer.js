@@ -26,7 +26,7 @@ const fileUtils = {
     const filters = {
       pdf: (file) => file.endsWith(".pdf"),
       img: (file) => !file.includes("."),
-      tests: (file) => file.endsWith(".zip"),
+      tests: (file) => file.endsWith(".xml"),
     };
     return files.filter(filters[type] || (() => false));
   },
@@ -138,7 +138,7 @@ function toggleSelection(event) {
   const select = event.currentTarget;
   const type = select.id.replace("List", "");
   const checkbox = document.querySelector(
-    `input[onchange="toggleSelectAll('${type}')"]`
+    `input[onchange="toggleSelectAll('${type}')"]`,
   );
   const allSelected = [...select.options].every((opt) => opt.selected);
   checkbox.checked = allSelected;
@@ -176,7 +176,7 @@ async function deleteSelected(type) {
           const dirPath = await window.electronAPI.getWorkingDir(type);
           const filePath = await window.electronAPI.path.join(
             dirPath,
-            option.value
+            option.value,
           );
           await window.electronAPI.shell.trashItem(filePath);
           logger.add(`${option.value} 삭제됨`);
@@ -254,7 +254,7 @@ async function processImages() {
   }
 
   const questionCount = parseInt(
-    document.getElementById("questionCount").value
+    document.getElementById("questionCount").value,
   );
   const config = {
     timeLimit: parseInt(document.getElementById("timeLimit").value),

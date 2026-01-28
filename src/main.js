@@ -137,13 +137,14 @@ const ipcHandlers = {
         const testMaker = new TestMaker({
           ...config,
           tempDir: "./temp",
+          driveFolderId: "1wD_t5NkQfyoInQenjK8cAs-d568rBgcw",
         });
 
         await testMaker.createPackage(
           path.join(imgDir, folder),
           zipDir,
           folder,
-          config.questionCount
+          config.questionCount,
         );
         return true;
       } catch (error) {
