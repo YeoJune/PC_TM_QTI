@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "PDF Problem Cutter and Test Maker",
   "main": "src/main.js",
-  "author": "Your Name",
+  "author": "",
   "license": "ISC",
   "scripts": {
     "start": "electron .",
@@ -31,21 +31,26 @@
       "output": "release"
     },
     "win": {
-      "target": ["dir"],
+      "target": [
+        "dir"
+      ],
       "icon": "build/icon.ico"
     },
     "mac": {
-      "target": ["dmg", "zip"],
+      "target": [
+        "dir"
+      ],
       "icon": "build/icon.icns",
       "category": "public.app-category.education",
-      "hardenedRuntime": false,
-      "gatekeeperAssess": false
+      "identity": null
     },
     "extraResources": [
       {
         "from": "src/python_dist",
         "to": "bin",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "files": [
