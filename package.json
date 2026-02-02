@@ -40,8 +40,6 @@
       "target": [
         "dir"
       ],
-      "icon": "build/icon.icns",
-      "category": "public.app-category.education",
       "identity": null
     },
     "extraResources": [

@@ -42,6 +42,7 @@ jobs:
         run: npx electron-builder --mac --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: List build output
         run: ls -R release/
@@ -50,9 +51,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos-build
-          path: |
-            release/*.dmg
-            release/*.zip
-            release/mac/**/*
+          path: release/mac-arm64/ProblemTestMaker.app
           retention-days: 7
-          if-no-files-found: warn
