@@ -3,8 +3,7 @@
     "start": "electron .",
     "build": "electron-builder",
     "build:python": ".\\build.bat",
-    "build:python:mac": "./build.sh",
-    "postinstall": "electron-builder install-app-deps"
+    "build:python:mac": "./build.sh"
   },
   "build": {
     "appId": "com.problemtestmaker.app",

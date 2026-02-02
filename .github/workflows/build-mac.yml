@@ -27,7 +27,7 @@ jobs:
           cache: "pip"
 
       - name: Install Node dependencies
-        run: npm install
+        run: npm ci
 
       - name: Build Python executable
         run: |
