@@ -1,28 +1,10 @@
 {
-  "name": "problem-test-maker",
-  "version": "1.0.0",
-  "description": "PDF Problem Cutter and Test Maker",
-  "main": "src/main.js",
   "scripts": {
     "start": "electron .",
     "build": "electron-builder",
     "build:python": ".\\build.bat",
+    "build:python:mac": "./build.sh",
     "postinstall": "electron-builder install-app-deps"
-  },
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "electron": "^40.0.0",
-    "electron-builder": "^26.6.0",
-    "rimraf": "^5.0.5"
-  },
-  "dependencies": {
-    "@google-cloud/local-auth": "^3.0.1",
-    "archiver": "^5.3.1",
-    "electron-store": "^8.1.0",
-    "googleapis": "^170.1.0",
-    "uuid": "^9.0.0",
-    "xmlbuilder2": "^4.0.3"
   },
   "build": {
     "appId": "com.problemtestmaker.app",
@@ -35,6 +17,18 @@
         "dir"
       ],
       "icon": "build/icon.ico"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "build/icon.icns",
+      "category": "public.app-category.education",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "entitlements": null,
+      "entitlementsInherit": null
     },
     "extraResources": [
       {
