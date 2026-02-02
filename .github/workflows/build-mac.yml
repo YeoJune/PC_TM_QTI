@@ -2,10 +2,9 @@ name: Build macOS
 
 on:
   push:
-    branches: [main, master]
-  pull_request:
-    branches: [main, master]
-  workflow_dispatch: # 수동 실행
+    branches:
+      - sju
+  workflow_dispatch:
 
 jobs:
   build-mac:
