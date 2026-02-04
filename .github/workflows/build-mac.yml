@@ -44,6 +44,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
+      - name: Create DMG manually
+        run: |
+          mkdir -p release/dmg
+          cp -R release/mac-arm64/ProblemTestMaker.app release/dmg/
+          hdiutil create -volname "ProblemTestMaker" -srcfolder release/dmg -ov -format UDZO release/ProblemTestMaker.dmg
+
       - name: List build output
         run: ls -lh release/
 
@@ -51,5 +57,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos-build
-          path: release/*.dmg
+          path: release/ProblemTestMaker.dmg
           retention-days: 7
