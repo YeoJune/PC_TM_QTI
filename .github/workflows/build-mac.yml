@@ -44,12 +44,21 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
+      - name: Remove quarantine attributes
+        run: |
+          xattr -cr release/mac-arm64/ProblemTestMaker.app
+
+      - name: Create zip
+        run: |
+          cd release/mac-arm64
+          zip -r ../ProblemTestMaker-macOS.zip ProblemTestMaker.app
+
       - name: List build output
-        run: ls -R release/
+        run: ls -lh release/
 
       - name: Upload macOS build
         uses: actions/upload-artifact@v4
         with:
           name: macos-build
-          path: release/mac-arm64/ProblemTestMaker.app
+          path: release/ProblemTestMaker-macOS.zip
           retention-days: 7
