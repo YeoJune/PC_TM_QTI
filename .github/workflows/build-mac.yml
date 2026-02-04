@@ -44,11 +44,54 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Create DMG manually
+      - name: Create installation script
         run: |
-          mkdir -p release/dmg
-          cp -R release/mac-arm64/ProblemTestMaker.app release/dmg/
-          hdiutil create -volname "ProblemTestMaker" -srcfolder release/dmg -ov -format UDZO release/ProblemTestMaker.dmg
+          cat > release/mac-arm64/install.sh << 'EOF'
+          #!/bin/bash
+          echo "ProblemTestMaker 설치 중..."
+
+          # quarantine 속성 제거
+          xattr -cr "$(dirname "$0")/ProblemTestMaker.app"
+
+          # Applications로 이동
+          cp -R "$(dirname "$0")/ProblemTestMaker.app" /Applications/
+
+          echo "설치 완료!"
+          echo "Applications 폴더에서 ProblemTestMaker를 실행하세요."
+
+          # 3초 후 자동 종료
+          sleep 3
+          EOF
+
+          chmod +x release/mac-arm64/install.sh
+
+      - name: Create README
+        run: |
+          cat > release/mac-arm64/README.txt << 'EOF'
+          【ProblemTestMaker 설치 방법】
+
+          1. "install.sh" 파일을 더블클릭
+             (또는 우클릭 → 열기)
+
+          2. "열기" 버튼 클릭
+
+          3. Applications 폴더에서 ProblemTestMaker 실행
+
+          ===================================
+
+          수동 설치:
+          터미널에서 다음 명령어 실행:
+
+          cd "다운로드한 폴더 경로"
+          xattr -cr ProblemTestMaker.app
+          cp -R ProblemTestMaker.app /Applications/
+
+          EOF
+
+      - name: Create zip
+        run: |
+          cd release/mac-arm64
+          zip -r ../ProblemTestMaker-macOS.zip ProblemTestMaker.app install.sh README.txt
 
       - name: List build output
         run: ls -lh release/
@@ -57,5 +100,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos-build
-          path: release/ProblemTestMaker.dmg
+          path: release/ProblemTestMaker-macOS.zip
           retention-days: 7
