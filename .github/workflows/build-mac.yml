@@ -46,52 +46,41 @@ jobs:
 
       - name: Create installation script
         run: |
-          cat > release/mac-arm64/install.sh << 'EOF'
+          cat > release/mac-arm64/install.command << 'EOF'
           #!/bin/bash
+          cd "$(dirname "$0")"
           echo "ProblemTestMaker 설치 중..."
-
-          # quarantine 속성 제거
-          xattr -cr "$(dirname "$0")/ProblemTestMaker.app"
-
-          # Applications로 이동
-          cp -R "$(dirname "$0")/ProblemTestMaker.app" /Applications/
-
+          xattr -cr ProblemTestMaker.app
+          cp -R ProblemTestMaker.app /Applications/
+          echo ""
           echo "설치 완료!"
           echo "Applications 폴더에서 ProblemTestMaker를 실행하세요."
-
-          # 3초 후 자동 종료
-          sleep 3
+          echo ""
+          read -p "Enter 키를 눌러 종료하세요..."
           EOF
 
-          chmod +x release/mac-arm64/install.sh
+          chmod +x release/mac-arm64/install.command
 
       - name: Create README
         run: |
           cat > release/mac-arm64/README.txt << 'EOF'
           【ProblemTestMaker 설치 방법】
 
-          1. "install.sh" 파일을 더블클릭
-             (또는 우클릭 → 열기)
+          1. "install.command" 파일 더블클릭
 
-          2. "열기" 버튼 클릭
+          2. 터미널이 열리면서 자동으로 설치됩니다
 
           3. Applications 폴더에서 ProblemTestMaker 실행
 
-          ===================================
-
-          수동 설치:
-          터미널에서 다음 명령어 실행:
-
-          cd "다운로드한 폴더 경로"
-          xattr -cr ProblemTestMaker.app
-          cp -R ProblemTestMaker.app /Applications/
+          ※ 첫 실행 시 "확인되지 않은 개발자" 경고가 뜨면
+             우클릭 → 열기 → 열기 버튼 클릭
 
           EOF
 
       - name: Create zip
         run: |
           cd release/mac-arm64
-          zip -r ../ProblemTestMaker-macOS.zip ProblemTestMaker.app install.sh README.txt
+          zip -r ../ProblemTestMaker-macOS.zip ProblemTestMaker.app install.command README.txt
 
       - name: List build output
         run: ls -lh release/
