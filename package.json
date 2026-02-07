@@ -21,6 +21,7 @@
     "archiver": "^5.3.1",
     "electron-store": "^8.1.0",
     "googleapis": "^170.1.0",
+    "p-limit": "^3.1.0",
     "uuid": "^9.0.0",
     "xmlbuilder2": "^4.0.3"
   },
@@ -49,6 +50,14 @@
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "credentials.json",
+        "to": "."
+      },
+      {
+        "from": ".env",
+        "to": "."
       }
     ],
     "files": [

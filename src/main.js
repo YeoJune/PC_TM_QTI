@@ -26,6 +26,10 @@ const workingDirs = {
 const isDev = !app.isPackaged;
 process.env.ELECTRON_IS_DEV = isDev ? "1" : "0";
 
+// 플랫폼 확인
+const isMac = process.platform === "darwin";
+const isWin = process.platform === "win32";
+
 // 작업 디렉토리 초기화
 async function initWorkingDirs() {
   const appPath = app.getAppPath();
@@ -110,21 +114,51 @@ const ipcHandlers = {
   // 실행 파일 관련
   "run-executable": async (event, { exeName, args }) => {
     return limit(async () => {
-      const exePath = isDev
-        ? path.join(__dirname, "python_dist", exeName, `${exeName}.exe`)
-        : path.join(process.resourcesPath, "bin", exeName, `${exeName}.exe`);
+      let exePath;
+
+      if (isDev) {
+        // 개발 환경
+        exePath = isWin
+          ? path.join(__dirname, "python_dist", exeName, `${exeName}.exe`)
+          : path.join(__dirname, "python_dist", exeName, exeName);
+      } else {
+        // 프로덕션 환경
+        exePath = isWin
+          ? path.join(process.resourcesPath, "bin", exeName, `${exeName}.exe`)
+          : path.join(process.resourcesPath, "bin", exeName, exeName);
+      }
+
+      console.log(`Executing: ${exePath} with args:`, args);
 
       return new Promise((resolve, reject) => {
         const childProcess = spawn(exePath, args);
         let output = "";
         let error = "";
 
-        childProcess.stdout.on("data", (data) => (output += data.toString()));
-        childProcess.stderr.on("data", (data) => (error += data.toString()));
+        childProcess.stdout.on("data", (data) => {
+          const text = data.toString();
+          output += text;
+          console.log(`[${exeName}] stdout:`, text);
+        });
+
+        childProcess.stderr.on("data", (data) => {
+          const text = data.toString();
+          error += text;
+          console.error(`[${exeName}] stderr:`, text);
+        });
+
+        childProcess.on("error", (err) => {
+          console.error(`[${exeName}] spawn error:`, err);
+          reject(new Error(`Failed to spawn process: ${err.message}`));
+        });
+
         childProcess.on("close", (code) => {
-          code === 0
-            ? resolve(output)
-            : reject(new Error(error || `Process exited with code ${code}`));
+          console.log(`[${exeName}] exited with code ${code}`);
+          if (code === 0) {
+            resolve(output);
+          } else {
+            reject(new Error(error || `Process exited with code ${code}`));
+          }
         });
       });
     });
