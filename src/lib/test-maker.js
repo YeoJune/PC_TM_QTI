@@ -29,8 +29,9 @@ class TestMaker {
     const credentialsPath = isPackaged
       ? path.join(process.resourcesPath, "credentials.json")
       : "./credentials.json";
+    // token.json은 사용자 데이터 디렉토리에 저장 (쓰기 가능)
     const tokenPath = isPackaged
-      ? path.join(process.resourcesPath, "token.json")
+      ? path.join(app.getPath("userData"), "token.json")
       : "./token.json";
 
     this.fileUtils = new FileUtils(this.config);

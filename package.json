@@ -54,10 +54,6 @@
       {
         "from": "credentials.json",
         "to": "."
-      },
-      {
-        "from": ".env",
-        "to": "."
       }
     ],
     "files": [
