@@ -7,6 +7,7 @@ const { DriveUploader } = require("./drive-uploader");
 const { XMLBuilder } = require("./xml-builder");
 const { FileUtils } = require("./utils");
 const { CONSTANTS } = require("../config/constants");
+const { app } = require("electron");
 
 const UPLOAD_CONCURRENCY = 10; // 동시 업로드 수
 
@@ -23,10 +24,19 @@ class TestMaker {
       ...config,
     };
 
+    // 패키징 여부에 따라 credentials 경로 설정
+    const isPackaged = app.isPackaged;
+    const credentialsPath = isPackaged
+      ? path.join(process.resourcesPath, "credentials.json")
+      : "./credentials.json";
+    const tokenPath = isPackaged
+      ? path.join(process.resourcesPath, "token.json")
+      : "./token.json";
+
     this.fileUtils = new FileUtils(this.config);
     this.driveUploader = new DriveUploader(
-      "./credentials.json",
-      "./token.json",
+      credentialsPath,
+      tokenPath,
       this.config.driveFolderId,
     );
     this.xmlBuilder = new XMLBuilder({
