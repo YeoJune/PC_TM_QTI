@@ -27,9 +27,6 @@ jobs:
       - name: Install Node dependencies
         run: npm install
 
-      - name: Create credentials.json from secret
-        run: echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
-
       - name: Build Python executable
         run: |
           python3 -m venv venv
@@ -50,20 +47,20 @@ jobs:
       - name: Create README
         run: |
           cat > release/mac-arm64/README.txt << 'EOF'
-          【ProblemTestMaker 설치 방법】
+          【ProblemTestMakerSJU 설치 방법】
 
           터미널을 열고 (⌘ + Space → "터미널" 입력) 아래 명령어를 복사해서 실행하세요:
 
-          cd ~/Downloads && xattr -cr ProblemTestMaker.app && cp -R ProblemTestMaker.app /Applications/
+          cd ~/Downloads && xattr -cr ProblemTestMakerSJU.app && cp -R ProblemTestMakerSJU.app /Applications/
 
-          그 다음 Applications 폴더에서 ProblemTestMaker를 실행하세요.
+          그 다음 Applications 폴더에서 ProblemTestMakerSJU를 실행하세요.
 
           EOF
 
       - name: Create zip
         run: |
           cd release/mac-arm64
-          zip -r ../ProblemTestMaker-macOS.zip ProblemTestMaker.app README.txt
+          zip -r ../ProblemTestMaker-macOS.zip ProblemTestMakerSJU.app README.txt
 
       - name: Upload macOS build
         uses: actions/upload-artifact@v4

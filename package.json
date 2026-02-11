@@ -50,10 +50,6 @@
         "filter": [
           "**/*"
         ]
-      },
-      {
-        "from": "credentials.json",
-        "to": "."
       }
     ],
     "files": [
