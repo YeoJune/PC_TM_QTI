@@ -14,6 +14,7 @@ const elements = {
     container: document.getElementById("modal"),
     title: document.getElementById("modal-title"),
     message: document.getElementById("modal-message"),
+    input: document.getElementById("modal-input"),
     confirmBtn: document.getElementById("modal-confirm"),
     cancelBtn: document.getElementById("modal-cancel"),
   }),
@@ -68,6 +69,9 @@ const modal = {
   show: ({
     title,
     message,
+    showInput = false,
+    inputValue = "",
+    inputPlaceholder = "",
     showCancel = false,
     onConfirm = null,
     onCancel = null,
@@ -76,10 +80,23 @@ const modal = {
 
     modalElements.title.textContent = title;
     modalElements.message.textContent = message;
+
+    // 입력 필드 설정
+    if (showInput) {
+      modalElements.input.style.display = "block";
+      modalElements.input.value = inputValue;
+      modalElements.input.placeholder = inputPlaceholder;
+      modalElements.input.focus();
+    } else {
+      modalElements.input.style.display = "none";
+      modalElements.input.value = "";
+    }
+
     modalElements.cancelBtn.style.display = showCancel ? "block" : "none";
 
     const handleConfirm = () => {
-      if (onConfirm) onConfirm();
+      const value = showInput ? modalElements.input.value : null;
+      if (onConfirm) onConfirm(value);
       modal.close();
     };
 
@@ -315,28 +332,46 @@ async function setDriveFolder() {
   try {
     const currentId = await window.electronAPI.store.get("driveFolderId", "");
 
-    const input = prompt(
-      "Google Drive 폴더 링크 또는 ID를 입력하세요:",
-      currentId,
-    );
+    modal.show({
+      title: "Google Drive 설정",
+      message: "Google Drive 폴더 링크 또는 ID를 입력하세요:",
+      showInput: true,
+      inputValue: currentId,
+      showCancel: true,
+      onConfirm: async (input) => {
+        if (input === null) return;
 
-    if (input === null) return; // 취소
+        let folderId = input.trim();
+        if (!folderId) return;
 
-    let folderId = input.trim();
-    if (!folderId) return;
+        // URL에서 ID 추출 시도
+        const urlMatch = folderId.match(/folders\/([-a-zA-Z0-9_]+)/);
+        if (urlMatch && urlMatch[1]) {
+          folderId = urlMatch[1];
+        }
 
-    // URL에서 ID 추출 시도
-    const urlMatch = folderId.match(/folders\/([-a-zA-Z0-9_]+)/);
-    if (urlMatch && urlMatch[1]) {
-      folderId = urlMatch[1];
-    }
-
-    await window.electronAPI.store.set("driveFolderId", folderId);
-    logger.add(`Drive 폴더 ID가 저장되었습니다: ${folderId}`);
-    alert("설정이 저장되었습니다.");
+        try {
+          await window.electronAPI.store.set("driveFolderId", folderId);
+          logger.add(`Drive 폴더 ID가 저장되었습니다: ${folderId}`);
+          modal.show({
+            title: "완료",
+            message: "설정이 저장되었습니다.",
+          });
+        } catch (error) {
+          logger.add(`[오류] 설정 저장 실패: ${error.message}`);
+          modal.show({
+            title: "오류",
+            message: `저장 실패: ${error.message}`,
+          });
+        }
+      },
+    });
   } catch (error) {
-    logger.add(`[오류] 설정 저장 실패: ${error.message}`);
-    alert(`오류: ${error.message}`);
+    logger.add(`[오류] 설정 불러오기 실패: ${error.message}`);
+    modal.show({
+      title: "오류",
+      message: `설정 불러오기 실패: ${error.message}`,
+    });
   }
 }
 
