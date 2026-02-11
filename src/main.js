@@ -164,14 +164,27 @@ const ipcHandlers = {
     });
   },
 
+  // 설정 관련
+  "settings:open-credentials-folder": async () => {
+    const userDataPath = app.getPath("userData");
+    await shell.openPath(userDataPath);
+    return userDataPath;
+  },
+
   // TestMaker 관련
   "process-testmaker": async (event, { imgDir, zipDir, folder, config }) => {
     return limit(async () => {
       try {
+        // 설정에서 드라이브 폴더 ID 가져오기
+        const savedFolderId = store.get("driveFolderId");
+        // 저장된 값이 없으면 기본값 사용
+        const driveFolderId =
+          savedFolderId || "1wD_t5NkQfyoInQenjK8cAs-d568rBgcw";
+
         const testMaker = new TestMaker({
           ...config,
           tempDir: "./temp",
-          driveFolderId: "1wD_t5NkQfyoInQenjK8cAs-d568rBgcw",
+          driveFolderId,
         });
 
         await testMaker.createPackage(

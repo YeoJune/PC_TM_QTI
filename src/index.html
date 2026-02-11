@@ -1,12 +1,23 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Problem Test Maker</title>
+    <title>Problem Test Maker SJU</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <div class="container">
+      <!-- 설정 섹션 -->
+      <div class="section" style="grid-column: 1 / -1">
+        <h2>⚙️ 설정</h2>
+        <div class="button-group">
+          <button onclick="openCredentialsFolder()">
+            인증 파일 폴더 열기 (credentials.json)
+          </button>
+          <button onclick="setDriveFolder()">구글 드라이브 폴더 설정</button>
+        </div>
+      </div>
+
       <!-- PDF 섹션 -->
       <div class="section">
         <h2>📄 PDF 처리</h2>

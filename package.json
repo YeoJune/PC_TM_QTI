@@ -1,5 +1,5 @@
 {
-  "name": "problem-test-maker",
+  "name": "problem-test-maker-sju",
   "version": "1.0.0",
   "description": "PDF Problem Cutter and Test Maker",
   "main": "src/main.js",
@@ -26,8 +26,8 @@
     "xmlbuilder2": "^4.0.3"
   },
   "build": {
-    "appId": "com.problemtestmaker.app",
-    "productName": "ProblemTestMaker",
+    "appId": "com.problemtestmakersju.app",
+    "productName": "ProblemTestMakerSJU",
     "directories": {
       "output": "release"
     },

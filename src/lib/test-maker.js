@@ -25,14 +25,31 @@ class TestMaker {
     };
 
     // 패키징 여부에 따라 credentials 경로 설정
-    const isPackaged = app.isPackaged;
-    const credentialsPath = isPackaged
-      ? path.join(process.resourcesPath, "credentials.json")
-      : "./credentials.json";
+    // const isPackaged = app.isPackaged;
+    // 사용자 데이터 디렉토리에서 credentials*.json 패턴 매칭
+    const userDataPath = app.getPath("userData");
+    let credentialsFileName = "credentials.json";
+
+    try {
+      if (fs.existsSync(userDataPath)) {
+        const files = fs.readdirSync(userDataPath);
+        // credentials로 시작하고 .json으로 끝나는 파일 중 첫 번째 찾기
+        const found = files.find(
+          (file) => file.startsWith("credentials") && file.endsWith(".json"),
+        );
+        if (found) {
+          credentialsFileName = found;
+          console.log(`Found credentials file: ${credentialsFileName}`);
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to search for credentials file:", error);
+    }
+
+    const credentialsPath = path.join(userDataPath, credentialsFileName);
+
     // token.json은 사용자 데이터 디렉토리에 저장 (쓰기 가능)
-    const tokenPath = isPackaged
-      ? path.join(app.getPath("userData"), "token.json")
-      : "./token.json";
+    const tokenPath = path.join(userDataPath, "token.json");
 
     this.fileUtils = new FileUtils(this.config);
     this.driveUploader = new DriveUploader(

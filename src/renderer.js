@@ -298,6 +298,48 @@ async function processImages() {
   });
 }
 
+// 설정 관련
+async function openCredentialsFolder() {
+  try {
+    await window.electronAPI.invoke("settings:open-credentials-folder");
+    logger.add("인증 파일 폴더를 열었습니다.");
+  } catch (error) {
+    modal.show({
+      title: "오류",
+      message: `폴더 열기 실패: ${error.message}`,
+    });
+  }
+}
+
+async function setDriveFolder() {
+  try {
+    const currentId = await window.electronAPI.store.get("driveFolderId", "");
+
+    const input = prompt(
+      "Google Drive 폴더 링크 또는 ID를 입력하세요:",
+      currentId,
+    );
+
+    if (input === null) return; // 취소
+
+    let folderId = input.trim();
+    if (!folderId) return;
+
+    // URL에서 ID 추출 시도
+    const urlMatch = folderId.match(/folders\/([-a-zA-Z0-9_]+)/);
+    if (urlMatch && urlMatch[1]) {
+      folderId = urlMatch[1];
+    }
+
+    await window.electronAPI.store.set("driveFolderId", folderId);
+    logger.add(`Drive 폴더 ID가 저장되었습니다: ${folderId}`);
+    alert("설정이 저장되었습니다.");
+  } catch (error) {
+    logger.add(`[오류] 설정 저장 실패: ${error.message}`);
+    alert(`오류: ${error.message}`);
+  }
+}
+
 // 초기화
 document.addEventListener("DOMContentLoaded", async () => {
   // 초기 파일 목록 로드
@@ -326,4 +368,6 @@ Object.assign(window, {
   clearLog: logger.clear,
   toggleSelectAll, // 전체 선택 토글 함수 추가
   toggleSelection, // 개별 선택 토글 함수 추가
+  openCredentialsFolder,
+  setDriveFolder,
 });
