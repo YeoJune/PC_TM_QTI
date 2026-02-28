@@ -129,25 +129,34 @@ def crop_images(pages: List,
                 if is_merge:
                     if len(dets) and dets[-1]:
                         # numpy 배열을 PIL Image로 변환하여 자르기
-                        box = (left, top - margin, img_array.shape[1], bot + margin)
+                        # 여백 없이 자르기
                         cropped = Image.fromarray(img_array[
-                            max(0, top - margin):min(img_array.shape[0], bot + margin),
+                            top:min(img_array.shape[0], bot),
                             left:img_array.shape[1]
                         ])
                         
+                        # 배경색 여백 추가
+                        padded = Image.new("RGB", (cropped.width, cropped.height + margin * 2), (255, 255, 255))
+                        padded.paste(cropped, (0, margin))
+                        
                         merged = Image.new("RGB",
                                        (images[-1].width,
-                                        images[-1].height + cropped.height))
+                                        images[-1].height + padded.height))
                         merged.paste(images[-1], (0, 0))
-                        merged.paste(cropped, (0, images[-1].height))
+                        merged.paste(padded, (0, images[-1].height))
                         images[-1] = merged
                 else:
-                    box = (left, top - margin, img_array.shape[1], bot + margin)
+                    # 여백 없이 자르기
                     cropped = Image.fromarray(img_array[
-                        max(0, top - margin):min(img_array.shape[0], bot + margin),
+                        top:min(img_array.shape[0], bot),
                         left:img_array.shape[1]
                     ])
-                    images.append(cropped)
+                    
+                    # 배경색 여백 추가
+                    padded = Image.new("RGB", (cropped.width, cropped.height + margin * 2), (255, 255, 255))
+                    padded.paste(cropped, (0, margin))
+                    
+                    images.append(padded)
                 is_first = True
             else:
                 if not is_white:
@@ -252,24 +261,17 @@ class ProblemCutter:
 def process_pdf_file(src_path: str,
                     output_dir: str,
                     name: str,
-                    config: dict = None) -> None:
+                    config: ProblemCutterConfig = None) -> None:
     """Node.js에서 호출할 메인 함수
     
     Args:
         src_path: PDF 파일 경로
         output_dir: 출력 디렉토리
         name: 출력 파일 이름 prefix
-        config: 설정 딕셔너리 (선택사항)
+        config: ProblemCutterConfig 인스턴스 (선택사항)
     """
     try:
-        user_config = None
-        if settings:
-            config = ProblemCutterConfig(
-                resolution=settings.get('resolution', 2),
-                margin=settings.get('margin', 8)
-            )
-            
-        cutter = ProblemCutter(user_config)
+        cutter = ProblemCutter(config)
         cutter.process_pdf(src_path, output_dir, name)
         
     except Exception as e:

@@ -11,3 +11,5 @@ venv
 dist
 zips
 release
+credentials.json
+token.json
