@@ -128,16 +128,17 @@ def crop_images(pages: List,
                         
                 if is_merge:
                     if len(dets) and dets[-1]:
-                        # numpy 배열을 PIL Image로 변환하여 자르기
-                        # 여백 없이 자르기
+                        # crop_margin만큼 실제 픽셀 포함, 나머지는 흰 배경 패딩
+                        crop_margin = 2 * resolution
+                        pad_margin = margin - crop_margin
                         cropped = Image.fromarray(img_array[
-                            top:min(img_array.shape[0], bot),
+                            max(0, top - crop_margin):min(img_array.shape[0], bot + crop_margin),
                             left:img_array.shape[1]
                         ])
                         
                         # 배경색 여백 추가
-                        padded = Image.new("RGB", (cropped.width, cropped.height + margin * 2), (255, 255, 255))
-                        padded.paste(cropped, (0, margin))
+                        padded = Image.new("RGB", (cropped.width, cropped.height + pad_margin * 2), (255, 255, 255))
+                        padded.paste(cropped, (0, pad_margin))
                         
                         merged = Image.new("RGB",
                                        (images[-1].width,
@@ -146,15 +147,17 @@ def crop_images(pages: List,
                         merged.paste(padded, (0, images[-1].height))
                         images[-1] = merged
                 else:
-                    # 여백 없이 자르기
+                    # crop_margin만큼 실제 픽셀 포함, 나머지는 흰 배경 패딩
+                    crop_margin = 2 * resolution
+                    pad_margin = margin - crop_margin
                     cropped = Image.fromarray(img_array[
-                        top:min(img_array.shape[0], bot),
+                        max(0, top - crop_margin):min(img_array.shape[0], bot + crop_margin),
                         left:img_array.shape[1]
                     ])
                     
                     # 배경색 여백 추가
-                    padded = Image.new("RGB", (cropped.width, cropped.height + margin * 2), (255, 255, 255))
-                    padded.paste(cropped, (0, margin))
+                    padded = Image.new("RGB", (cropped.width, cropped.height + pad_margin * 2), (255, 255, 255))
+                    padded.paste(cropped, (0, pad_margin))
                     
                     images.append(padded)
                 is_first = True
